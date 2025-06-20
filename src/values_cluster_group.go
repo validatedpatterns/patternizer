@@ -36,30 +36,30 @@ type ValuesClusterGroup struct {
 }
 
 // newDefaultValuesClusterGroup creates a default configuration for a cluster group.
-func newDefaultValuesClusterGroup(patternName, clusterGroupName string, chartPaths []string) *ValuesClusterGroup {
-	// Initialize with default namespaces and projects
-	namespaces := []string{"vault", "golang-external-secrets", patternName}
+// It conditionally includes secrets-related resources based on the useSecrets flag.
+func newDefaultValuesClusterGroup(patternName, clusterGroupName string, chartPaths []string, useSecrets bool) *ValuesClusterGroup {
+	namespaces := []string{patternName}
 	projects := []string{clusterGroupName, patternName}
+	applications := make(map[string]Application)
 
-	// Initialize with default applications that are always present
-	applications := map[string]Application{
-		"vault": {
+	if useSecrets {
+		namespaces = append(namespaces, "vault", "golang-external-secrets")
+		applications["vault"] = Application{
 			Name:         "vault",
 			Namespace:    "vault",
 			Project:      clusterGroupName,
 			Chart:        "hashicorp-vault",
 			ChartVersion: "0.1.*",
-		},
-		"golang-external-secrets": {
+		}
+		applications["golang-external-secrets"] = Application{
 			Name:         "golang-external-secrets",
 			Namespace:    "golang-external-secrets",
 			Project:      clusterGroupName,
 			Chart:        "golang-external-secrets",
 			ChartVersion: "0.1.*",
-		},
+		}
 	}
 
-	// Add applications discovered from the filesystem
 	for _, path := range chartPaths {
 		chartName := filepath.Base(path)
 		app := Application{

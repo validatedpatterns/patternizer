@@ -81,7 +81,7 @@ func processGlobalValues(patternName string) (*ValuesGlobal, error) {
 }
 
 // processClusterGroupValues handles the creation/update of the values-<clustergroup>.yaml file.
-func processClusterGroupValues(globalValues *ValuesGlobal, repoRoot string) error {
+func processClusterGroupValues(globalValues *ValuesGlobal, repoRoot string, useSecrets bool) error {
 	clusterGroupName := globalValues.Main.ClusterGroupName
 	patternName := globalValues.Global.Pattern
 	filename := fmt.Sprintf("values-%s.yaml", clusterGroupName)
@@ -92,7 +92,7 @@ func processClusterGroupValues(globalValues *ValuesGlobal, repoRoot string) erro
 	}
 	log.Printf("Found %d top-level charts.", len(chartPaths))
 
-	values := newDefaultValuesClusterGroup(patternName, clusterGroupName, chartPaths)
+	values := newDefaultValuesClusterGroup(patternName, clusterGroupName, chartPaths, useSecrets)
 
 	yamlFile, err := os.ReadFile(filename)
 	if err != nil && !os.IsNotExist(err) {
@@ -133,7 +133,10 @@ func main() {
 		log.Fatalf("Error processing global values: %v", err)
 	}
 
-	if err := processClusterGroupValues(globalValues, repoRoot); err != nil {
+	useSecrets := os.Getenv("USE_SECRETS") != "false"
+	log.Printf("Secrets will%s be added to the cluster group values file", map[bool]string{true: "", false: " not"}[useSecrets])
+
+	if err := processClusterGroupValues(globalValues, repoRoot, useSecrets); err != nil {
 		log.Fatalf("Error processing cluster group values: %v", err)
 	}
 

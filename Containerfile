@@ -8,9 +8,10 @@ RUN git clone https://github.com/validatedpatterns/common.git
 
 COPY entrypoint.sh .
 COPY src/patternizer .
-COPY Makefile .
 COPY values-secret.yaml.template .
 
 WORKDIR /repo
+
+ENV USE_SECRETS=false
 
 CMD ["/wd/entrypoint.sh"]
