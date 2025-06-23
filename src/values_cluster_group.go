@@ -4,20 +4,22 @@ import "path/filepath"
 
 // Application defines the structure for an ArgoCD application entry.
 type Application struct {
-	Name         string `yaml:"name"`
-	Namespace    string `yaml:"namespace"`
-	Project      string `yaml:"project"`
-	Path         string `yaml:"path,omitempty"`
-	Chart        string `yaml:"chart,omitempty"`
-	ChartVersion string `yaml:"chartVersion,omitempty"`
+	Name         string                 `yaml:"name"`
+	Namespace    string                 `yaml:"namespace"`
+	Project      string                 `yaml:"project"`
+	Path         string                 `yaml:"path,omitempty"`
+	Chart        string                 `yaml:"chart,omitempty"`
+	ChartVersion string                 `yaml:"chartVersion,omitempty"`
+	OtherFields  map[string]interface{} `yaml:",inline"`
 }
 
 // Subscription defines the structure for an Operator subscription.
 type Subscription struct {
-	Name      string `yaml:"name"`
-	Namespace string `yaml:"namespace"`
-	Channel   string `yaml:"channel,omitempty"`
-	Source    string `yaml:"source,omitempty"`
+	Name        string                 `yaml:"name"`
+	Namespace   string                 `yaml:"namespace"`
+	Channel     string                 `yaml:"channel,omitempty"`
+	Source      string                 `yaml:"source,omitempty"`
+	OtherFields map[string]interface{} `yaml:",inline"`
 }
 
 // ClusterGroup holds the detailed configuration for the cluster group.
@@ -28,11 +30,13 @@ type ClusterGroup struct {
 	Projects      []string                `yaml:"projects"`
 	Subscriptions map[string]Subscription `yaml:"subscriptions"`
 	Applications  map[string]Application  `yaml:"applications"`
+	OtherFields   map[string]interface{}  `yaml:",inline"`
 }
 
 // ValuesClusterGroup is the top-level struct for the cluster group values file.
 type ValuesClusterGroup struct {
-	ClusterGroup ClusterGroup `yaml:"clusterGroup"`
+	ClusterGroup ClusterGroup           `yaml:"clusterGroup"`
+	OtherFields  map[string]interface{} `yaml:",inline"`
 }
 
 // newDefaultValuesClusterGroup creates a default configuration for a cluster group.
