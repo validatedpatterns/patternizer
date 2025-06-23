@@ -15,6 +15,7 @@ type Main struct {
 
 // MultiSourceConfig represents the 'multiSourceConfig' subsection under 'main'.
 type MultiSourceConfig struct {
+	Enabled                  bool                   `yaml:"enabled"`
 	ClusterGroupChartVersion string                 `yaml:"clusterGroupChartVersion"`
 	OtherFields              map[string]interface{} `yaml:",inline"`
 }
@@ -33,6 +34,7 @@ func newDefaultValuesGlobal() *ValuesGlobal {
 		Main: Main{
 			ClusterGroupName: "prod",
 			MultiSourceConfig: MultiSourceConfig{
+				Enabled:                  true,
 				ClusterGroupChartVersion: "0.9.*",
 			},
 		},
