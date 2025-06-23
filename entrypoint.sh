@@ -5,7 +5,7 @@ set -e
 echo "Copying pattern-util script from common"
 cp /wd/common/scripts/pattern-util.sh pattern.sh
 OLD_CONTAINER="quay.io/hybridcloudpatterns/utility-container"
-NEW_CONTAINER="utility-container:local"
+NEW_CONTAINER="quay.io/dminnear/common-utility-container"
 sed -i "s|$OLD_CONTAINER|$NEW_CONTAINER|" pattern.sh
 
 if [[ "$USE_SECRETS" != "false" ]]; then
