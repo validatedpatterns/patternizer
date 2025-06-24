@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 function is_available {
   command -v $1 >/dev/null 2>&1 || { echo >&2 "$1 is required but it's not installed. Aborting."; exit 1; }
@@ -78,6 +78,8 @@ else
     PKI_HOST_MOUNT_ARGS=""
 fi
 
+: "${USE_SECRETS:=false}"
+
 # Copy Kubeconfig from current environment. The utilities will pick up ~/.kube/config if set so it's not mandatory
 # $HOME is mounted as itself for any files that are referenced with absolute paths
 # $HOME is mounted to /root because the UID in the container is 0 and that's where SSH looks for credentials
@@ -103,6 +105,7 @@ podman run -it --rm --pull=newer \
     -e K8S_AUTH_USERNAME \
     -e K8S_AUTH_PASSWORD \
     -e K8S_AUTH_TOKEN \
+    -e USE_SECRETS \
     ${PKI_HOST_MOUNT_ARGS} \
     -v "$(pwd)":/pattern-repo \
     -v "${HOME}":"${HOME}" \
