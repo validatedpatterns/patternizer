@@ -1,5 +1,8 @@
 # Patternizer
 
+[![Quay Repository](https://img.shields.io/badge/Quay.io-patternizer-blue?logo=quay)](https://quay.io/repository/dminnear/patternizer)
+[![Container Build Status](https://github.com/dminnear-rh/patternizer/actions/workflows/push-to-quay.yaml/badge.svg?branch=main)](https://github.com/dminnear-rh/patternizer/actions/workflows/push-to-quay.yaml)
+
 Patternizer is a container-based utility designed to bootstrap a new Validated Pattern repository. It automatically generates the necessary `values-global.yaml` and `values-<cluster_group>.yaml` files by inspecting the Git repository, discovering Helm charts, and applying sensible defaults.
 
 The entire process is wrapped in a container for simplicity and consistency, ensuring that anyone can generate a new pattern with a single command.
