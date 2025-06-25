@@ -25,7 +25,7 @@ type Subscription struct {
 // ClusterGroup holds the detailed configuration for the cluster group.
 type ClusterGroup struct {
 	Name          string                  `yaml:"name"`
-	IsHubCluster  bool                    `yaml:"isHubCluster"`
+	IsHubCluster  bool                    `yaml:"isHubCluster,omitempty"`
 	Namespaces    []string                `yaml:"namespaces"`
 	Projects      []string                `yaml:"projects"`
 	Subscriptions map[string]Subscription `yaml:"subscriptions"`
@@ -78,7 +78,6 @@ func newDefaultValuesClusterGroup(patternName, clusterGroupName string, chartPat
 	return &ValuesClusterGroup{
 		ClusterGroup: ClusterGroup{
 			Name:          clusterGroupName,
-			IsHubCluster:  true,
 			Namespaces:    namespaces,
 			Projects:      projects,
 			Subscriptions: make(map[string]Subscription),

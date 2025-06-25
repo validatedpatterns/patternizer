@@ -3,69 +3,69 @@
 [![Quay Repository](https://img.shields.io/badge/Quay.io-patternizer-blue?logo=quay)](https://quay.io/repository/dminnear/patternizer)
 [![Container Build Status](https://github.com/dminnear-rh/patternizer/actions/workflows/push-to-quay.yaml/badge.svg?branch=main)](https://github.com/dminnear-rh/patternizer/actions/workflows/push-to-quay.yaml)
 
-Patternizer is a container-based utility designed to bootstrap a new Validated Pattern repository. It automatically generates the necessary `values-global.yaml` and `values-<cluster_group>.yaml` files by inspecting the Git repository, discovering Helm charts, and applying sensible defaults.
+**Patternizer** is a container-based utility designed to bootstrap a new Validated Pattern repository. It automatically generates the necessary `values-global.yaml` and `values-<cluster_group>.yaml` files by inspecting the Git repository, discovering Helm charts, and applying sensible defaults.
 
-The entire process is wrapped in a container for simplicity and consistency, ensuring that anyone can generate a new pattern with a single command.
-
----
-## Prerequisites
-
-Before you begin, ensure you have the following tools installed on your system:
-
-* **Git**: For version control.
-* **Go**: (Version 1.24+) Required only for building the `patternizer` binary from source.
-* **Podman** (or Docker): For building and running the container.
+The utility also provides a `pattern.sh` script for installing, loading secrets, and other common operations. The entire process is containerized to ensure consistency and ease of use.
 
 ---
+
 ## Quickstart Guide
 
-Follow these steps to set up a new pattern repository.
+You can use the prebuilt container image from Quay to initialize a new pattern repository without building anything locally.
 
-### Step 1: Build the Go Binary
+1. Clone the Git repository you want to patternize:
 
-The `patternizer` utility is a Go application. First, you need to compile it from the source located in the `src` directory.
+   ```bash
+   git clone https://github.com/dminnear-rh/trivial-pattern.git
+   cd trivial-pattern
+   ````
+
+2. Run the Patternizer container to initialize the repository:
+
+   * If **you do not need secrets support**, run:
+
+     ```bash
+     podman run --rm -it -v .:/repo:z quay.io/dminnear/patternizer
+     ```
+
+   * If **you want to enable secrets support** (Vault and External Secrets), run instead:
+
+     ```bash
+     podman run --rm -it -e USE_SECRETS=true -v .:/repo:z quay.io/dminnear/patternizer
+     ```
+
+   This will generate:
+
+   * `values-global.yaml`
+   * `values-<cluster_group>.yaml`
+   * `pattern.sh` (utility script)
+   * `values-secret.yaml.template` (only if `USE_SECRETS=true`)
+
+3. Install the Pattern
+
+   Log into the OpenShift 4 cluster where you want to install the pattern, then run:
+
+   ```bash
+   ./pattern.sh make install
+   ```
+
+   This uses the common utility container (`quay.io/dminnear/common-utility-container`) to handle shared scripts and resources, so no `common/` directory or Makefile is added directly to your repo.
+
+---
+
+## Development (Optional)
+
+You only need to build the Go binary or container if you're modifying or developing Patternizer itself.
+
+### Build the Go Binary
 
 ```bash
 cd src
 go build
 ```
 
-This will create an executable file named `patternizer` inside the `src` directory.
-
-### Step 2: Build the Container Image
-
-Next, build the container image. The `Conatinerfile` in the root of the repository packages the `patternizer` binary and all necessary dependencies.
-
-From the **root directory** of the `patternizer` repository, run:
+### Build the Container Image
 
 ```bash
 podman build -t patternizer:local .
 ```
-
-### Step 3: Run the Patternizer
-
-Now you can use the container to initialize any Git repository as a Validated Pattern.
-
-1.  Clone the Git repository you want to turn into a pattern.
-2.  Navigate into that repository's directory.
-3.  Run the container, mounting your repository as a volume.
-
-```bash
-# git clone https://github.com/dminnear-rh/trivial-pattern.git
-# cd /path/to/repo/trivial-pattern
-podman run --rm -it -v .:/repo:z patternizer:local
-```
-
----
-## How It Works
-
-When you execute the `podman run` command, the container performs the following actions on the repository mounted at `/repo`:
-
-1.  **Runs Patternizer**: Executes the Go binary to create or update:
-    * `values-global.yaml`: The pattern name is automatically detected from your Git remote URL.
-    * `values-hub.yaml` (or similar): This file is populated with default applications and any top-level Helm charts found in your repository.
-2.  **Copies Common Files**: The entire `validatedpatterns/common` repository is copied into a `common/` subfolder for access to shared scripts and resources.
-3.  **Adds Templates**: A `Makefile` and `values-secret.yaml.template` are added to your repository root.
-4.  **Creates Utility Script**: A symbolic link named `pattern.sh` is created in your repository root, pointing to `common/scripts/pattern-util.sh` for easy access.
-
-After the container finishes, your local repository will be fully initialized and ready for you to customize and push to Git.
