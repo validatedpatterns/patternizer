@@ -1,4 +1,4 @@
-package main
+package types
 
 // Global represents the 'global' section of the YAML file.
 type Global struct {
@@ -27,8 +27,8 @@ type ValuesGlobal struct {
 	OtherFields map[string]interface{} `yaml:",inline"`
 }
 
-// newDefaultValuesGlobal creates a ValuesGlobal struct with all the default values.
-func newDefaultValuesGlobal() *ValuesGlobal {
+// NewDefaultValuesGlobal creates a ValuesGlobal struct with all the default values.
+func NewDefaultValuesGlobal() *ValuesGlobal {
 	return &ValuesGlobal{
 		Global: Global{},
 		Main: Main{

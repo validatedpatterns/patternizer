@@ -1,4 +1,4 @@
-package main
+package types
 
 import "path/filepath"
 
@@ -39,9 +39,9 @@ type ValuesClusterGroup struct {
 	OtherFields  map[string]interface{} `yaml:",inline"`
 }
 
-// newDefaultValuesClusterGroup creates a default configuration for a cluster group.
+// NewDefaultValuesClusterGroup creates a default configuration for a cluster group.
 // It conditionally includes secrets-related resources based on the useSecrets flag.
-func newDefaultValuesClusterGroup(patternName, clusterGroupName string, chartPaths []string, useSecrets bool) *ValuesClusterGroup {
+func NewDefaultValuesClusterGroup(patternName, clusterGroupName string, chartPaths []string, useSecrets bool) *ValuesClusterGroup {
 	namespaces := []string{patternName}
 	projects := []string{clusterGroupName, patternName}
 	applications := make(map[string]Application)
