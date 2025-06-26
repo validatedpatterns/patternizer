@@ -1,0 +1,19 @@
+clusterGroup:
+  name: prod
+  namespaces:
+    - trivial-pattern
+  projects:
+    - prod
+    - trivial-pattern
+  subscriptions: {}
+  applications:
+    simple:
+      name: simple
+      namespace: trivial-pattern
+      project: trivial-pattern
+      path: charts/simple
+    trivial:
+      name: trivial
+      namespace: trivial-pattern
+      project: trivial-pattern
+      path: charts/trivial

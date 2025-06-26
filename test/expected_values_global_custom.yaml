@@ -1,0 +1,7 @@
+global:
+  pattern: renamed-pattern
+main:
+  clusterGroupName: renamed-cluster-group
+  multiSourceConfig:
+    enabled: true
+    clusterGroupChartVersion: 0.9.*

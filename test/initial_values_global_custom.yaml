@@ -1,0 +1,4 @@
+global:
+  pattern: renamed-pattern
+main:
+  clusterGroupName: renamed-cluster-group
