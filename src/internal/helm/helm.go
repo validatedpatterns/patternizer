@@ -1,4 +1,4 @@
-package main
+package helm
 
 import (
 	"io/fs"
@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-// isHelmChart checks if a given directory path contains a valid Helm chart.
-func isHelmChart(path string) bool {
+// IsHelmChart checks if a given directory path contains a valid Helm chart.
+func IsHelmChart(path string) bool {
 	chartYamlPath := filepath.Join(path, "Chart.yaml")
 	valuesYamlPath := filepath.Join(path, "values.yaml")
 	templatesDirPath := filepath.Join(path, "templates")
@@ -28,9 +28,9 @@ func isHelmChart(path string) bool {
 	return true
 }
 
-// findTopLevelCharts walks the filesystem from rootDir to find all top-level Helm charts.
+// FindTopLevelCharts walks the filesystem from rootDir to find all top-level Helm charts.
 // It intelligently skips sub-chart directories.
-func findTopLevelCharts(rootDir string) ([]string, error) {
+func FindTopLevelCharts(rootDir string) ([]string, error) {
 	var charts []string
 
 	err := filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
@@ -46,7 +46,7 @@ func findTopLevelCharts(rootDir string) ([]string, error) {
 			return filepath.SkipDir
 		}
 
-		if isHelmChart(path) {
+		if IsHelmChart(path) {
 			relPath, _ := filepath.Rel(rootDir, path)
 			charts = append(charts, relPath)
 			// Once we identify a chart, we don't need to look at its subdirectories.

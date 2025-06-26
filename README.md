@@ -119,6 +119,7 @@ cd src
 go test -v ./...
 
 # Run integration tests (requires built binary)
+cd ..
 ./test/integration_test.sh
 ```
 
@@ -155,10 +156,28 @@ go vet ./...
 
 ### Unit Tests
 
-Located in `src/*_test.go`, these test core functionality:
-- Resource path resolution
-- Default values generation
-- Secrets integration logic
+The project includes comprehensive unit tests located in `src/*_test.go` and `src/internal/*/` packages:
+
+**Core Functionality Tests:**
+- Resource path resolution and environment variable handling
+- Default values generation for global and cluster group configurations
+- Secrets integration logic and template handling
+
+**Helm Chart Discovery Tests:**
+- `FindTopLevelCharts()` correctly identifies top-level Helm charts
+- Properly skips sub-charts, hidden directories, and invalid chart structures
+- `IsHelmChart()` validates chart structure (Chart.yaml, values.yaml, templates/)
+
+**Pattern Processing Tests:**
+- URL parsing for SSH, HTTPS, and HTTP Git repository formats
+- Error handling for invalid or unsupported URL formats
+- Field preservation during YAML processing (custom user fields are never overwritten)
+- Proper merging of defaults with existing configuration files
+
+**Field Preservation Verification:**
+- Tests ensure that custom fields in `values-global.yaml` are preserved
+- Tests verify that custom fields in cluster group values files are maintained
+- Tests confirm that nested custom fields and arrays are properly handled
 
 ### Integration Tests
 
@@ -193,16 +212,29 @@ All code must pass linting and tests before being merged or deployed.
 
 ## Architecture
 
-The CLI is organized into focused modules:
+The CLI is organized into focused packages following Go best practices:
 
-- `main.go` - CLI setup and command definitions (Cobra)
-- `commands.go` - Command logic and orchestration
-- `fileutils.go` - File operations and resource management
-- `pattern.go` - Core pattern processing and Git operations
-- `helm.go` - Helm chart discovery
-- `values_*.go` - YAML structure definitions
+**Main Package (`src/`):**
+- `main.go` - Application entry point
 
-This modular design makes the codebase maintainable and testable.
+**Command Package (`src/cmd/`):**
+- `root.go` - Cobra CLI setup and root command
+- `init.go` - Initialization command logic and orchestration
+
+**Internal Packages (`src/internal/`):**
+- `fileutils/` - File operations, resource management, and path resolution
+- `helm/` - Helm chart discovery and validation
+- `pattern/` - Core pattern processing, Git operations, and URL parsing
+- `types/` - YAML structure definitions and default value constructors
+
+**Key Design Principles:**
+- **Separation of Concerns**: Each package has a single, well-defined responsibility
+- **Testability**: All packages are thoroughly unit tested with comprehensive coverage
+- **Field Preservation**: YAML processing preserves all user-defined custom fields
+- **Error Handling**: Comprehensive error handling with descriptive messages
+- **Modularity**: Clean interfaces between packages for maintainability
+
+This modular design makes the codebase maintainable, testable, and extensible.
 
 ---
 
