@@ -1,0 +1,19 @@
+clusterGroup:
+  name: renamed-cluster-group
+  namespaces:
+    - renamed-pattern
+  projects:
+    - renamed-cluster-group
+    - renamed-pattern
+  subscriptions: {}
+  applications:
+    simple:
+      name: simple
+      namespace: renamed-pattern
+      project: renamed-pattern
+      path: charts/simple
+    trivial:
+      name: trivial
+      namespace: renamed-pattern
+      project: renamed-pattern
+      path: charts/trivial
