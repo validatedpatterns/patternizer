@@ -3,7 +3,6 @@ clusterGroup:
   namespaces:
     - trivial-pattern
   projects:
-    - prod
     - trivial-pattern
   subscriptions: {}
   applications:

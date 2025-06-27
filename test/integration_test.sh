@@ -199,9 +199,9 @@ check_file_exists "values-secret.yaml.template" "values-secret.yaml.template fil
 echo -e "${GREEN}=== Test 2: Initialization with secrets PASSED ===${NC}"
 
 #
-# Test 3: Custom pattern and cluster group names (merging test)
+# Test 3: Custom pattern and cluster group names (merging test with secrets)
 #
-echo -e "${YELLOW}=== Test 3: Custom pattern and cluster group names ===${NC}"
+echo -e "${YELLOW}=== Test 3: Custom pattern and cluster group names (with secrets) ===${NC}"
 
 cd "$REPO_ROOT"  # Go back to repo root
 echo -e "${YELLOW}Cloning test repository for custom names test...${NC}"
@@ -211,8 +211,8 @@ cd "$TEST_DIR_CUSTOM"
 echo -e "${YELLOW}Setting up initial values-global.yaml with custom names...${NC}"
 cp "$INITIAL_VALUES_GLOBAL_CUSTOM" "values-global.yaml"
 
-echo -e "${YELLOW}Running patternizer init (should preserve custom names)...${NC}"
-PATTERNIZER_RESOURCES_DIR="$REPO_ROOT" "$PATTERNIZER_BINARY" init
+echo -e "${YELLOW}Running patternizer init --with-secrets (should preserve custom names)...${NC}"
+PATTERNIZER_RESOURCES_DIR="$REPO_ROOT" "$PATTERNIZER_BINARY" init --with-secrets
 
 echo -e "${YELLOW}Running verification tests for custom names...${NC}"
 
@@ -222,8 +222,8 @@ compare_yaml "$EXPECTED_VALUES_GLOBAL_CUSTOM" "values-global.yaml" "values-globa
 # Test 3.2: Check custom cluster group file is created with correct content
 compare_yaml "$EXPECTED_VALUES_RENAMED_CLUSTER_GROUP" "values-renamed-cluster-group.yaml" "values-renamed-cluster-group.yaml content"
 
-# Test 3.3: Check pattern.sh exists and has USE_SECRETS=false
-check_file_content "pattern.sh" 'USE_SECRETS:=false' "pattern.sh contains USE_SECRETS=false (custom names)"
+# Test 3.3: Check pattern.sh exists and has USE_SECRETS=true
+check_file_content "pattern.sh" 'USE_SECRETS:=true' "pattern.sh contains USE_SECRETS=true (custom names)"
 
 # Test 3.4: Verify pattern.sh is executable
 if [ -x "pattern.sh" ]; then
@@ -233,10 +233,60 @@ else
     exit 1
 fi
 
-echo -e "${GREEN}=== Test 3: Custom pattern and cluster group names PASSED ===${NC}"
+# Test 3.5: Check values-secret.yaml.template exists
+check_file_exists "values-secret.yaml.template" "values-secret.yaml.template file exists (custom names)"
+
+echo -e "${GREEN}=== Test 3: Custom pattern and cluster group names (with secrets) PASSED ===${NC}"
+
+#
+# Test 4: Sequential execution (init followed by init --with-secrets)
+#
+echo -e "${YELLOW}=== Test 4: Sequential execution (init + init --with-secrets) ===${NC}"
+
+cd "$REPO_ROOT"  # Go back to repo root
+TEST_DIR_SEQUENTIAL="/tmp/patternizer-integration-test-sequential"
+
+# Clean up any previous sequential test runs
+if [ -d "$TEST_DIR_SEQUENTIAL" ]; then
+    rm -rf "$TEST_DIR_SEQUENTIAL"
+fi
+
+echo -e "${YELLOW}Cloning test repository for sequential test...${NC}"
+git clone "$TEST_REPO_URL" "$TEST_DIR_SEQUENTIAL"
+cd "$TEST_DIR_SEQUENTIAL"
+
+echo -e "${YELLOW}Running patternizer init (first)...${NC}"
+PATTERNIZER_RESOURCES_DIR="$REPO_ROOT" "$PATTERNIZER_BINARY" init
+
+echo -e "${YELLOW}Running patternizer init --with-secrets (second)...${NC}"
+PATTERNIZER_RESOURCES_DIR="$REPO_ROOT" "$PATTERNIZER_BINARY" init --with-secrets
+
+echo -e "${YELLOW}Running verification tests for sequential execution...${NC}"
+
+# Test 4.1: Check values-global.yaml (should be same as basic case)
+compare_yaml "$EXPECTED_VALUES_GLOBAL" "values-global.yaml" "values-global.yaml content (sequential)"
+
+# Test 4.2: Check values-prod.yaml matches the --with-secrets output
+compare_yaml "$EXPECTED_VALUES_PROD_WITH_SECRETS" "values-prod.yaml" "values-prod.yaml content (sequential, should match --with-secrets)"
+
+# Test 4.3: Check pattern.sh exists and has USE_SECRETS=true
+check_file_content "pattern.sh" 'USE_SECRETS:=true' "pattern.sh contains USE_SECRETS=true (sequential)"
+
+# Test 4.4: Verify pattern.sh is executable
+if [ -x "pattern.sh" ]; then
+    echo -e "${GREEN}PASS: pattern.sh is executable (sequential)${NC}"
+else
+    echo -e "${RED}FAIL: pattern.sh is not executable (sequential)${NC}"
+    exit 1
+fi
+
+# Test 4.5: Check values-secret.yaml.template exists
+check_file_exists "values-secret.yaml.template" "values-secret.yaml.template file exists (sequential)"
+
+echo -e "${GREEN}=== Test 4: Sequential execution PASSED ===${NC}"
 
 echo -e "${GREEN}All integration tests passed!${NC}"
 
 # Clean up
 cd "$REPO_ROOT"
-rm -rf "$TEST_DIR" "$TEST_DIR_SECRETS" "$TEST_DIR_CUSTOM"
+rm -rf "$TEST_DIR" "$TEST_DIR_SECRETS" "$TEST_DIR_CUSTOM" "$TEST_DIR_SEQUENTIAL"
