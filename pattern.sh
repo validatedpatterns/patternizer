@@ -105,7 +105,7 @@ podman run -it --rm --pull=newer \
     -e K8S_AUTH_USERNAME \
     -e K8S_AUTH_PASSWORD \
     -e K8S_AUTH_TOKEN \
-    -e USE_SECRETS \
+    -e USE_SECRETS="$USE_SECRETS" \
     ${PKI_HOST_MOUNT_ARGS} \
     -v "$(pwd)":/pattern-repo \
     -v "${HOME}":"${HOME}" \
