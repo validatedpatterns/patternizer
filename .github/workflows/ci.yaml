@@ -13,7 +13,6 @@ on:
 env:
   IMAGE_NAME: quay.io/dminnear/patternizer
   GO_VERSION: '1.24'
-  GOLANGCI_LINT_VERSION: 'v2.1.6'
 
 jobs:
   lint-and-format:
@@ -28,26 +27,8 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache-dependency-path: src/go.sum
 
-      - name: Run gofmt
-        run: |
-          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
-            echo "The following files are not formatted:"
-            gofmt -s -l .
-            exit 1
-          fi
-        working-directory: ./src
-
-      - name: Run go vet
-        run: go vet ./...
-        working-directory: ./src
-
-      - name: Install golangci-lint
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin ${{ env.GOLANGCI_LINT_VERSION }}
-
-      - name: Run golangci-lint
-        run: $(go env GOPATH)/bin/golangci-lint run
-        working-directory: ./src
+      - name: Run linting checks
+        run: make lint
 
   build-and-test:
     runs-on: ubuntu-latest
@@ -63,26 +44,16 @@ jobs:
           cache-dependency-path: src/go.sum
 
       - name: Build binary
-        run: go build -v -o patternizer .
-        working-directory: ./src
+        run: make build
 
       - name: Run unit tests
-        run: |
-          echo "Running unit tests for all packages..."
-          go test -v ./...
-        working-directory: ./src
+        run: make test-unit
 
       - name: Generate test coverage report
-        run: |
-          echo "Generating test coverage report..."
-          go test ./... -coverprofile=coverage.out
-          go tool cover -func=coverage.out
-        working-directory: ./src
+        run: make test-coverage
 
       - name: Run integration tests
-        run: ./test/integration_test.sh
-        env:
-          PATTERNIZER_BINARY: ./src/patternizer
+        run: make test-integration
 
   build-container:
     runs-on: ubuntu-latest

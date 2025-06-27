@@ -226,13 +226,15 @@ make test
 
 ## CI/CD Pipeline
 
-The project uses a comprehensive CI pipeline with three stages:
+The project uses a comprehensive CI pipeline with three stages that leverage the Makefile for consistency:
 
-1. **Lint & Format**: Code quality checks with `gofmt`, `go vet`, and `golangci-lint`
-2. **Build & Test**: Binary compilation, unit tests, and integration tests
+1. **Lint & Format**: `make lint` - Code quality checks with `gofmt`, `go vet`, and `golangci-lint`
+2. **Build & Test**: `make build`, `make test-unit`, `make test-coverage`, `make test-integration`
 3. **Container Build**: Multi-stage container build and push to Quay.io
 
 All code must pass linting and tests before being merged or deployed.
+
+The CI pipeline uses the same Makefile targets that developers use locally, ensuring perfect consistency between local development and CI environments. You can run the same checks locally with `make ci`.
 
 ---
 
