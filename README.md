@@ -53,8 +53,15 @@ patternizer init
 # Initialize pattern files with secrets support
 patternizer init --with-secrets
 
-# Show help for the init command
+# Update existing pattern to use patternizer workflow (with secrets by default)
+patternizer update
+
+# Update existing pattern without secrets
+patternizer update --no-secrets
+
+# Show help for specific commands
 patternizer init help
+patternizer update help
 ```
 
 ### Output Files
@@ -68,6 +75,13 @@ The `patternizer init` command generates:
 When using `--with-secrets`:
 - `values-secret.yaml.template` - Template for secrets configuration
 - Modified `pattern.sh` with `USE_SECRETS=true` as default
+
+The `patternizer update` command modifies existing patterns:
+
+- **Removes** `common/` directory (now handled by utility container)
+- **Removes** existing `Makefile` (utility container provides its own)
+- **Replaces** `pattern.sh` symlink/file with patternizer version
+- **Sets** `USE_SECRETS=true` by default (use `--no-secrets` for `USE_SECRETS=false`)
 
 ---
 
@@ -112,6 +126,75 @@ podman run --rm -it -v .:/repo:z quay.io/dminnear/patternizer init --with-secret
    ```bash
    ./pattern.sh make install
    ```
+
+---
+
+## Updating Existing Patterns
+
+If you have an existing Validated Pattern that uses the traditional structure (with `common/` directory and symlinked `pattern.sh`), you can modernize it to use the patternizer workflow:
+
+### Update Workflow
+
+1. **Navigate to your existing pattern repository:**
+   ```bash
+   cd /path/to/your/existing-pattern
+   ```
+
+2. **Update the pattern (with secrets by default):**
+   ```bash
+   podman run --rm -it -v .:/repo:z quay.io/dminnear/patternizer update
+   ```
+
+3. **Or update without secrets:**
+   ```bash
+   podman run --rm -it -v .:/repo:z quay.io/dminnear/patternizer update --no-secrets
+   ```
+
+4. **Verify the changes:**
+   ```bash
+   # Check that old files are removed
+   ls -la common/    # Should not exist
+   ls -la Makefile   # Should not exist
+
+   # Check that pattern.sh is now a real file
+   ls -la pattern.sh  # Should be a regular file, not a symlink
+
+   # Verify USE_SECRETS setting
+   grep "USE_SECRETS" pattern.sh
+   ```
+
+### What Gets Updated
+
+The `update` command modernizes your pattern by:
+- ✅ **Removing** the `common/` directory (functionality moved to utility container)
+- ✅ **Removing** the top-level `Makefile` (utility container provides its own)
+- ✅ **Replacing** the symlinked `pattern.sh` with the patternizer version
+- ✅ **Configuring** secrets support (`USE_SECRETS=true` by default)
+- ✅ **Preserving** all your existing values files and custom configurations
+
+### Example: Updating multicloud-gitops
+
+```bash
+# Clone an existing pattern
+git clone https://github.com/validatedpatterns/multicloud-gitops.git
+cd multicloud-gitops
+
+# Before: traditional structure
+ls -la common/           # Directory exists
+ls -la Makefile          # File exists
+ls -la pattern.sh        # Symlink to ./common/scripts/pattern-util.sh
+
+# Update to patternizer workflow
+podman run --rm -it -v .:/repo:z quay.io/dminnear/patternizer update
+
+# After: modernized structure
+ls -la common/           # Directory removed
+ls -la Makefile          # File removed
+ls -la pattern.sh        # Now a regular file with USE_SECRETS=true
+
+# Use the updated pattern
+./pattern.sh make install
+```
 
 ---
 
@@ -216,7 +299,7 @@ The project includes comprehensive unit tests across multiple packages:
 
 ### Integration Tests
 
-The integration test suite (`test/integration_test.sh`) validates the complete CLI workflow with four comprehensive test scenarios:
+The integration test suite (`test/integration_test.sh`) validates the complete CLI workflow with five comprehensive test scenarios:
 
 **Test 1: Basic Initialization (Without Secrets)**
 - Clones the [trivial-pattern](https://github.com/dminnear-rh/trivial-pattern) repository
@@ -240,6 +323,13 @@ The integration test suite (`test/integration_test.sh`) validates the complete C
 - Tests running `patternizer init` followed by `patternizer init --with-secrets`
 - Validates that the second command properly upgrades the configuration
 - Ensures final state matches direct `--with-secrets` execution
+
+**Test 5: Update Existing Pattern**
+- Clones the [multicloud-gitops](https://github.com/validatedpatterns/multicloud-gitops) repository (real-world existing pattern)
+- Verifies initial traditional pattern structure (`common/` directory, `Makefile`, symlinked `pattern.sh`)
+- Runs `patternizer update` to modernize the pattern
+- Validates complete cleanup: `common/` and `Makefile` removal, `pattern.sh` symlink replacement
+- Ensures new `pattern.sh` has `USE_SECRETS=true` and executable permissions
 
 Run integration tests locally:
 ```bash
