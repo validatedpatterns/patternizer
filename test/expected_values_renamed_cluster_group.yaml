@@ -2,11 +2,19 @@ clusterGroup:
   name: renamed-cluster-group
   namespaces:
     - renamed-pattern
+    - vault
+    - golang-external-secrets
   projects:
-    - renamed-cluster-group
     - renamed-pattern
+    - renamed-cluster-group
   subscriptions: {}
   applications:
+    golang-external-secrets:
+      name: golang-external-secrets
+      namespace: golang-external-secrets
+      project: renamed-cluster-group
+      chart: golang-external-secrets
+      chartVersion: 0.1.*
     simple:
       name: simple
       namespace: renamed-pattern
@@ -17,3 +25,9 @@ clusterGroup:
       namespace: renamed-pattern
       project: renamed-pattern
       path: charts/trivial
+    vault:
+      name: vault
+      namespace: vault
+      project: renamed-cluster-group
+      chart: hashicorp-vault
+      chartVersion: 0.1.*

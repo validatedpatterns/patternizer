@@ -119,10 +119,14 @@ func ProcessClusterGroupValues(patternName, clusterGroupName, repoRoot string, c
 	}
 
 	if err == nil {
-		// File exists, unmarshal into our defaults (natural merging)
-		if err = yaml.Unmarshal(yamlFile, values); err != nil {
+		// File exists, unmarshal into a separate struct first
+		var existingValues types.ValuesClusterGroup
+		if err = yaml.Unmarshal(yamlFile, &existingValues); err != nil {
 			return fmt.Errorf("failed to unmarshal YAML from %s: %w", clusterGroupValuesPath, err)
 		}
+
+		// Merge existing values with new defaults intelligently
+		mergeClusterGroupValues(values, &existingValues)
 	}
 
 	// Write back the merged values
@@ -135,4 +139,75 @@ func ProcessClusterGroupValues(patternName, clusterGroupName, repoRoot string, c
 	}
 
 	return nil
+}
+
+// mergeClusterGroupValues intelligently merges existing values with new defaults
+func mergeClusterGroupValues(defaults, existing *types.ValuesClusterGroup) {
+	// Preserve existing applications and merge with new ones
+	for key, app := range existing.ClusterGroup.Applications {
+		defaults.ClusterGroup.Applications[key] = app
+	}
+
+	// For namespaces: preserve existing ones and add secrets-related ones if needed
+	existingNamespaceMap := make(map[string]bool)
+	for _, ns := range existing.ClusterGroup.Namespaces {
+		// Add existing namespace to defaults if not already present
+		found := false
+		for _, defaultNs := range defaults.ClusterGroup.Namespaces {
+			if ns.Equal(defaultNs) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			defaults.ClusterGroup.Namespaces = append(defaults.ClusterGroup.Namespaces, ns)
+		}
+		// Track what we have
+		if nsStr, ok := ns.GetString(); ok {
+			existingNamespaceMap[nsStr] = true
+		}
+	}
+
+	// For projects: preserve existing ones and add cluster group project if secrets are needed
+	existingProjectMap := make(map[string]bool)
+	for _, proj := range existing.ClusterGroup.Projects {
+		existingProjectMap[proj] = true
+	}
+
+	// Rebuild projects list preserving existing order but ensuring required projects are present
+	mergedProjects := make([]string, 0)
+
+	// Add existing projects first
+	mergedProjects = append(mergedProjects, existing.ClusterGroup.Projects...)
+
+	// Add any missing required projects
+	for _, proj := range defaults.ClusterGroup.Projects {
+		if !existingProjectMap[proj] {
+			mergedProjects = append(mergedProjects, proj)
+		}
+	}
+
+	defaults.ClusterGroup.Projects = mergedProjects
+
+	// Preserve other fields from existing
+	if existing.ClusterGroup.IsHubCluster {
+		defaults.ClusterGroup.IsHubCluster = existing.ClusterGroup.IsHubCluster
+	}
+
+	// Merge subscriptions
+	for key, sub := range existing.ClusterGroup.Subscriptions {
+		defaults.ClusterGroup.Subscriptions[key] = sub
+	}
+
+	// Merge other fields
+	if existing.ClusterGroup.OtherFields != nil {
+		for key, value := range existing.ClusterGroup.OtherFields {
+			defaults.ClusterGroup.OtherFields[key] = value
+		}
+	}
+	if existing.OtherFields != nil {
+		for key, value := range existing.OtherFields {
+			defaults.OtherFields[key] = value
+		}
+	}
 }
