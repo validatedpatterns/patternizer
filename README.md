@@ -17,6 +17,25 @@ The tool provides both a standalone CLI and containerized execution for maximum 
 - 🔐 **Secrets integration** with Vault and External Secrets support
 - ✅ **Comprehensive testing** with unit and integration tests
 - 🏗️ **Multi-stage builds** for minimal container images
+- 🛠️ **Makefile-driven development** for consistent local development and CI
+
+## Quick Start for Developers
+
+```bash
+# Clone the repository
+git clone https://github.com/dminnear-rh/patternizer.git
+cd patternizer
+
+# Set up development environment
+make dev-setup
+
+# See all available targets
+make help
+
+# Build and test
+make build
+make test
+```
 
 ---
 
@@ -103,34 +122,41 @@ podman run --rm -it -v .:/repo:z quay.io/dminnear/patternizer init --with-secret
 - Go 1.24+
 - Podman or Docker
 - Git
+- Make
 
-### Building the CLI
+### Quick Start
 
 ```bash
-cd src
-go build -o patternizer .
+# Set up development environment (installs dependencies and tools)
+make dev-setup
+
+# Show all available targets
+make help
 ```
 
-### Running Tests
+### Common Development Tasks
 
 ```bash
-# Run unit tests
-cd src
-go test -v ./...
+# Build the CLI
+make build
 
-# Run integration tests (requires built binary)
-cd ..
-./test/integration_test.sh
-```
+# Run all tests (unit + integration)
+make test
 
-### Building the Container
+# Run only unit tests
+make test-unit
 
-```bash
-# Build with default settings
-podman build -t patternizer:local .
+# Run only integration tests
+make test-integration
 
-# Build with custom alpine version
-podman build --build-arg ALPINE_VERSION=3.22 -t patternizer:local .
+# Build container image locally
+make local-container-build
+
+# Run full CI pipeline locally
+make ci
+
+# Quick feedback loop (format check, vet, build, unit tests)
+make check
 ```
 
 ### Code Quality
@@ -138,16 +164,16 @@ podman build --build-arg ALPINE_VERSION=3.22 -t patternizer:local .
 The project uses comprehensive linting and formatting:
 
 ```bash
-cd src
+# Run all linting checks (gofmt, go vet, golangci-lint)
+make lint
 
 # Format code
-gofmt -s -w .
+make fmt
 
-# Run linter
-golangci-lint run
-
-# Run vet
-go vet ./...
+# Run individual lint checks
+make lint-fmt     # gofmt check
+make lint-vet     # go vet
+make lint-golangci # golangci-lint
 ```
 
 ---
@@ -189,11 +215,11 @@ The integration test (`test/integration_test.sh`) validates the complete workflo
 
 Run integration tests locally:
 ```bash
-# Build the binary first
-cd src && go build -o patternizer .
+# Run integration tests (automatically builds binary first)
+make test-integration
 
-# Run integration tests
-cd .. && ./test/integration_test.sh
+# Or run all tests (unit + integration)
+make test
 ```
 
 ---
@@ -243,7 +269,27 @@ This modular design makes the codebase maintainable, testable, and extensible.
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Run tests: `go test ./... && ./test/integration_test.sh`
+4. Run the development workflow:
+   ```bash
+   make dev-setup  # Set up development environment
+   make check      # Quick feedback loop
+   make test       # Run all tests
+   make lint       # Run all linting checks
+   ```
 5. Submit a pull request
 
 All contributions must pass the CI pipeline including linting, formatting, and comprehensive testing.
+
+### Development Workflow
+
+For the best development experience:
+```bash
+# Initial setup
+make dev-setup
+
+# During development (fast feedback)
+make check
+
+# Before committing
+make ci  # Runs the full CI pipeline locally
+```
