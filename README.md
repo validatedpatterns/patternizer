@@ -182,36 +182,64 @@ make lint-golangci # golangci-lint
 
 ### Unit Tests
 
-The project includes comprehensive unit tests located in `src/*_test.go` and `src/internal/*/` packages:
+The project includes comprehensive unit tests across multiple packages:
 
-**Core Functionality Tests:**
-- Resource path resolution and environment variable handling
-- Default values generation for global and cluster group configurations
-- Secrets integration logic and template handling
+**Main Package Tests (`src/main_test.go`):**
+- `TestGetResourcePath()` - Resource path resolution with and without environment variables
+- `TestNewDefaultValuesGlobal()` - Global configuration default values validation
+- `TestNewDefaultValuesClusterGroup()` - Cluster group configuration generation and secrets integration
 
-**Helm Chart Discovery Tests:**
-- `FindTopLevelCharts()` correctly identifies top-level Helm charts
-- Properly skips sub-charts, hidden directories, and invalid chart structures
-- `IsHelmChart()` validates chart structure (Chart.yaml, values.yaml, templates/)
+**Helm Package Tests (`src/internal/helm/helm_test.go`):**
+- `TestFindTopLevelCharts()` - Helm chart discovery functionality with comprehensive test scenarios:
+  - Correctly identifies valid top-level charts (chart1, chart2)
+  - Properly skips sub-charts in `charts/` directories
+  - Ignores hidden directories (`.hidden-chart`) and invalid chart structures
+  - Handles edge cases: missing Chart.yaml, missing values.yaml, missing templates directory, templates as file
+- `TestIsHelmChart()` - Chart structure validation:
+  - Validates required files: Chart.yaml, values.yaml, templates/ directory
+  - Tests various invalid configurations and edge cases
 
-**Pattern Processing Tests:**
-- URL parsing for SSH, HTTPS, and HTTP Git repository formats
-- Error handling for invalid or unsupported URL formats
-- Field preservation during YAML processing (custom user fields are never overwritten)
-- Proper merging of defaults with existing configuration files
-
-**Field Preservation Verification:**
-- Tests ensure that custom fields in `values-global.yaml` are preserved
-- Tests verify that custom fields in cluster group values files are maintained
-- Tests confirm that nested custom fields and arrays are properly handled
+**Pattern Package Tests (`src/internal/pattern/pattern_test.go`):**
+- `TestExtractPatternNameFromURL()` - Git URL parsing for multiple formats:
+  - SSH URLs: `git@github.com:user/repo.git`, `git@gitlab.com:group/subgroup/repo.git`
+  - HTTPS/HTTP URLs: `https://github.com/user/repo.git`, `http://github.com/user/repo`
+  - Error handling for invalid URLs and unsupported protocols
+- `TestProcessGlobalValuesPreservesFields()` - Field preservation during YAML processing:
+  - Preserves existing custom fields at all nesting levels
+  - Maintains custom arrays, nested objects, and primitive values
+  - Intelligently merges new defaults with existing configurations
+- `TestProcessClusterGroupValuesPreservesFields()` - Cluster group values field preservation:
+  - Preserves custom applications, subscriptions, and cluster-level fields
+  - Adds new applications while maintaining existing ones
+  - Maintains custom fields within applications and subscriptions
+- `TestProcessGlobalValuesWithNewFile()` - New file creation with proper defaults
 
 ### Integration Tests
 
-The integration test (`test/integration_test.sh`) validates the complete workflow:
+The integration test suite (`test/integration_test.sh`) validates the complete CLI workflow with four comprehensive test scenarios:
+
+**Test 1: Basic Initialization (Without Secrets)**
 - Clones the [trivial-pattern](https://github.com/dminnear-rh/trivial-pattern) repository
-- Runs `patternizer init`
-- Verifies generated files match expected output
-- Ensures `pattern.sh` is created with correct configuration
+- Runs `patternizer init` and validates generated files
+- Verifies `values-global.yaml` and `values-prod.yaml` content using YAML normalization
+- Ensures `pattern.sh` is created with `USE_SECRETS=false` and executable permissions
+
+**Test 2: Initialization with Secrets**
+- Tests `patternizer init --with-secrets` functionality
+- Validates secrets-specific applications (vault, golang-external-secrets) are added
+- Verifies additional namespaces and `values-secret.yaml.template` are created
+- Ensures `pattern.sh` is configured with `USE_SECRETS=true`
+
+**Test 3: Custom Pattern and Cluster Group Names**
+- Tests field preservation and intelligent merging of existing configurations
+- Pre-populates custom `values-global.yaml` with renamed pattern and cluster group
+- Verifies custom names are preserved while adding missing default configurations
+- Validates custom cluster group file generation (e.g., `values-renamed-cluster-group.yaml`)
+
+**Test 4: Sequential Execution**
+- Tests running `patternizer init` followed by `patternizer init --with-secrets`
+- Validates that the second command properly upgrades the configuration
+- Ensures final state matches direct `--with-secrets` execution
 
 Run integration tests locally:
 ```bash
