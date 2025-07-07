@@ -10,7 +10,6 @@ import (
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	var withSecrets bool
-	var noSecrets bool
 
 	var rootCmd = &cobra.Command{
 		Use:   "patternizer",
@@ -37,27 +36,12 @@ configures the pattern.sh script for secrets usage.`,
 		},
 	}
 
-	var updateCmd = &cobra.Command{
-		Use:   "update",
-		Short: "Update existing Validated Pattern to use patternizer workflow",
-		Long: `Update existing Validated Pattern removes the common/ directory and replaces the pattern.sh script
-with the patternizer version. By default, it configures the pattern to use secrets (USE_SECRETS=true).
-
-Use --no-secrets flag to disable secrets usage (USE_SECRETS=false).`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Check if "help" is passed as an argument
-			if len(args) > 0 && args[0] == "help" {
-				return cmd.Help()
-			}
-			return runUpdate(noSecrets)
-		},
-	}
-
 	initCmd.Flags().BoolVar(&withSecrets, "with-secrets", false, "Include secrets template and configure pattern for secrets usage")
-	updateCmd.Flags().BoolVar(&noSecrets, "no-secrets", false, "Disable secrets usage (USE_SECRETS=false)")
 
 	rootCmd.AddCommand(initCmd)
-	rootCmd.AddCommand(updateCmd)
+
+	// Hide the completion command from help since this is primarily used in containers
+	rootCmd.CompletionOptions.HiddenDefaultCmd = true
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)

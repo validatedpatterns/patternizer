@@ -11,11 +11,9 @@ NC='\033[0m' # No Color
 # Test configuration
 PATTERNIZER_BINARY="${PATTERNIZER_BINARY:-./src/patternizer}"
 TEST_REPO_URL="https://github.com/dminnear-rh/trivial-pattern.git"
-UPDATE_TEST_REPO_URL="https://github.com/validatedpatterns/multicloud-gitops.git"
 TEST_DIR="/tmp/patternizer-integration-test"
 TEST_DIR_SECRETS="/tmp/patternizer-integration-test-secrets"
 TEST_DIR_CUSTOM="/tmp/patternizer-integration-test-custom"
-TEST_DIR_UPDATE="/tmp/patternizer-integration-test-update"
 
 echo -e "${YELLOW}Starting patternizer integration tests...${NC}"
 
@@ -28,9 +26,6 @@ if [ -d "$TEST_DIR_SECRETS" ]; then
 fi
 if [ -d "$TEST_DIR_CUSTOM" ]; then
     rm -rf "$TEST_DIR_CUSTOM"
-fi
-if [ -d "$TEST_DIR_UPDATE" ]; then
-    rm -rf "$TEST_DIR_UPDATE"
 fi
 
 # Convert PATTERNIZER_BINARY to absolute path before changing directories
@@ -178,6 +173,10 @@ else
     exit 1
 fi
 
+# Test 1.5: Check Makefile exists and has USE_SECRETS=false
+check_file_exists "Makefile" "Makefile exists (init without secrets)"
+check_file_content "Makefile" 'USE_SECRETS ?= false' "Makefile contains USE_SECRETS=false"
+
 echo -e "${GREEN}=== Test 1: Basic initialization PASSED ===${NC}"
 
 #
@@ -214,6 +213,10 @@ fi
 
 # Test 2.5: Check values-secret.yaml.template exists
 check_file_exists "values-secret.yaml.template" "values-secret.yaml.template file exists"
+
+# Test 2.6: Check Makefile exists and has USE_SECRETS=true
+check_file_exists "Makefile" "Makefile exists (init with secrets)"
+check_file_content "Makefile" 'USE_SECRETS ?= true' "Makefile contains USE_SECRETS=true"
 
 echo -e "${GREEN}=== Test 2: Initialization with secrets PASSED ===${NC}"
 
@@ -254,6 +257,10 @@ fi
 
 # Test 3.5: Check values-secret.yaml.template exists
 check_file_exists "values-secret.yaml.template" "values-secret.yaml.template file exists (custom names)"
+
+# Test 3.6: Check Makefile exists and has USE_SECRETS=true
+check_file_exists "Makefile" "Makefile exists (custom names with secrets)"
+check_file_content "Makefile" 'USE_SECRETS ?= true' "Makefile contains USE_SECRETS=true (custom names)"
 
 echo -e "${GREEN}=== Test 3: Custom pattern and cluster group names (with secrets) PASSED ===${NC}"
 
@@ -302,81 +309,14 @@ fi
 # Test 4.5: Check values-secret.yaml.template exists
 check_file_exists "values-secret.yaml.template" "values-secret.yaml.template file exists (sequential)"
 
+# Test 4.6: Check Makefile exists and has USE_SECRETS=true
+check_file_exists "Makefile" "Makefile exists (sequential execution)"
+check_file_content "Makefile" 'USE_SECRETS ?= true' "Makefile contains USE_SECRETS=true (sequential)"
+
 echo -e "${GREEN}=== Test 4: Sequential execution PASSED ===${NC}"
-
-#
-# Test 5: Update existing pattern (multicloud-gitops)
-#
-echo -e "${YELLOW}=== Test 5: Update existing pattern (multicloud-gitops) ===${NC}"
-
-cd "$REPO_ROOT"  # Go back to repo root
-echo -e "${YELLOW}Cloning multicloud-gitops repository for update test...${NC}"
-git clone "$UPDATE_TEST_REPO_URL" "$TEST_DIR_UPDATE"
-cd "$TEST_DIR_UPDATE"
-
-echo -e "${YELLOW}Verifying initial state (before update)...${NC}"
-# Verify the typical old pattern structure exists
-if [ -d "common" ]; then
-    echo -e "${GREEN}INFO: common/ directory exists (as expected)${NC}"
-else
-    echo -e "${YELLOW}WARNING: common/ directory not found - pattern may already be updated${NC}"
-fi
-
-if [ -f "Makefile" ]; then
-    echo -e "${GREEN}INFO: Makefile exists (as expected)${NC}"
-else
-    echo -e "${YELLOW}WARNING: Makefile not found - pattern may already be updated${NC}"
-fi
-
-if [ -L "pattern.sh" ]; then
-    echo -e "${GREEN}INFO: pattern.sh is a symlink (as expected)${NC}"
-    echo -e "${GREEN}INFO: pattern.sh points to: $(readlink pattern.sh)${NC}"
-elif [ -f "pattern.sh" ]; then
-    echo -e "${YELLOW}WARNING: pattern.sh exists but is not a symlink${NC}"
-else
-    echo -e "${RED}ERROR: pattern.sh not found at all${NC}"
-    exit 1
-fi
-
-echo -e "${YELLOW}Running patternizer update...${NC}"
-PATTERNIZER_RESOURCES_DIR="$REPO_ROOT" "$PATTERNIZER_BINARY" update
-
-echo -e "${YELLOW}Running verification tests for update...${NC}"
-
-# Test 5.1: Verify common/ directory was removed
-check_not_exists "common" "common/ directory was removed"
-
-# Test 5.2: Verify Makefile was removed
-check_not_exists "Makefile" "Makefile was removed"
-
-# Test 5.3: Verify pattern.sh exists and is a real file (not symlink)
-if [ -f "pattern.sh" ] && [ ! -L "pattern.sh" ]; then
-    echo -e "${GREEN}PASS: pattern.sh exists and is a regular file (not symlink)${NC}"
-else
-    echo -e "${RED}FAIL: pattern.sh is not a regular file${NC}"
-    if [ -L "pattern.sh" ]; then
-        echo "pattern.sh is still a symlink pointing to: $(readlink pattern.sh)"
-    elif [ ! -f "pattern.sh" ]; then
-        echo "pattern.sh does not exist"
-    fi
-    exit 1
-fi
-
-# Test 5.4: Check pattern.sh has USE_SECRETS=true (default for update)
-check_file_content "pattern.sh" 'USE_SECRETS:=true' "pattern.sh contains USE_SECRETS=true (update default)"
-
-# Test 5.5: Verify pattern.sh is executable
-if [ -x "pattern.sh" ]; then
-    echo -e "${GREEN}PASS: pattern.sh is executable (update)${NC}"
-else
-    echo -e "${RED}FAIL: pattern.sh is not executable (update)${NC}"
-    exit 1
-fi
-
-echo -e "${GREEN}=== Test 5: Update existing pattern PASSED ===${NC}"
 
 echo -e "${GREEN}All integration tests passed!${NC}"
 
 # Clean up
 cd "$REPO_ROOT"
-rm -rf "$TEST_DIR" "$TEST_DIR_SECRETS" "$TEST_DIR_CUSTOM" "$TEST_DIR_SEQUENTIAL" "$TEST_DIR_UPDATE"
+rm -rf "$TEST_DIR" "$TEST_DIR_SECRETS" "$TEST_DIR_CUSTOM" "$TEST_DIR_SEQUENTIAL"

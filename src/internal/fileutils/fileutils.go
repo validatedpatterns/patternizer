@@ -96,6 +96,54 @@ func ModifyPatternShScript(patternShPath string, useSecrets bool) error {
 	return nil
 }
 
+// ModifyMakefileScript modifies the Makefile to set USE_SECRETS to the desired value.
+func ModifyMakefileScript(makefilePath string, useSecrets bool) error {
+	file, err := os.Open(makefilePath)
+	if err != nil {
+		return err
+	}
+
+	var lines []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	file.Close()
+
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	// Regex to match the USE_SECRETS line in Makefile format
+	regex := regexp.MustCompile(`^USE_SECRETS\s*\?=\s*(.+)$`)
+
+	for i, line := range lines {
+		if matches := regex.FindStringSubmatch(line); matches != nil {
+			if useSecrets {
+				lines[i] = "USE_SECRETS ?= true"
+			} else {
+				lines[i] = "USE_SECRETS ?= false"
+			}
+			break
+		}
+	}
+
+	output, err := os.Create(makefilePath)
+	if err != nil {
+		return err
+	}
+	defer output.Close()
+
+	for _, line := range lines {
+		_, err := output.WriteString(line + "\n")
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // HandleSecretsSetup handles the setup for secrets usage by copying the secrets template
 // and modifying the pattern.sh script.
 func HandleSecretsSetup(resourcesDir, repoRoot string) (err error) {
