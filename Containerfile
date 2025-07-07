@@ -24,6 +24,7 @@ WORKDIR ${PATTERNIZER_RESOURCES_DIR}
 
 COPY pattern.sh .
 COPY values-secret.yaml.template .
+COPY Makefile-pattern .
 
 ARG PATTERN_REPO_ROOT=/repo
 WORKDIR ${PATTERN_REPO_ROOT}

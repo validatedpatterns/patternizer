@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 function is_available {
   command -v $1 >/dev/null 2>&1 || { echo >&2 "$1 is required but it's not installed. Aborting."; exit 1; }
@@ -9,7 +9,7 @@ function version {
 }
 
 if [ -z "$PATTERN_UTILITY_CONTAINER" ]; then
-	PATTERN_UTILITY_CONTAINER="quay.io/dminnear/common-utility-container"
+	PATTERN_UTILITY_CONTAINER="quay.io/hybridcloudpatterns/utility-container"
 fi
 # If PATTERN_DISCONNECTED_HOME is set it will be used to populate both PATTERN_UTILITY_CONTAINER
 # and PATTERN_INSTALL_CHART automatically
@@ -107,10 +107,10 @@ podman run -it --rm --pull=newer \
     -e K8S_AUTH_TOKEN \
     -e USE_SECRETS="$USE_SECRETS" \
     ${PKI_HOST_MOUNT_ARGS} \
-    -v "$(pwd)":/pattern-repo \
     -v "${HOME}":"${HOME}" \
     -v "${HOME}":/pattern-home \
     ${PODMAN_ARGS} \
     ${EXTRA_ARGS} \
+    -w "$(pwd)" \
     "$PATTERN_UTILITY_CONTAINER" \
-    bash -c 'cp -r /pattern-repo/. /pattern && exec "$@"' _ "$@"
+    $@

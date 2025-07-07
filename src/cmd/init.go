@@ -34,7 +34,7 @@ func runInit(withSecrets bool) error {
 		return fmt.Errorf("error processing cluster group values: %w", err)
 	}
 
-	// Copy pattern.sh from resources
+	// Copy pattern.sh and Makefile from resources
 	resourcesDir, err := fileutils.GetResourcePath()
 	if err != nil {
 		return fmt.Errorf("error getting resource path: %w", err)
@@ -49,6 +49,18 @@ func runInit(withSecrets bool) error {
 	// Set USE_SECRETS in pattern.sh based on the flag
 	if err := fileutils.ModifyPatternShScript(patternShDst, withSecrets); err != nil {
 		return fmt.Errorf("error modifying pattern.sh: %w", err)
+	}
+
+	// Copy and modify Makefile
+	makefileSrc := filepath.Join(resourcesDir, "Makefile-pattern")
+	makefileDst := filepath.Join(repoRoot, "Makefile")
+	if err := fileutils.CopyFile(makefileSrc, makefileDst); err != nil {
+		return fmt.Errorf("error copying Makefile: %w", err)
+	}
+
+	// Set USE_SECRETS in Makefile based on the flag
+	if err := fileutils.ModifyMakefileScript(makefileDst, withSecrets); err != nil {
+		return fmt.Errorf("error modifying Makefile: %w", err)
 	}
 
 	// Handle secrets setup if requested

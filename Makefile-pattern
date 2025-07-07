@@ -1,0 +1,171 @@
+NAME ?= $(shell basename "`pwd`")
+
+ifneq ($(origin TARGET_SITE), undefined)
+  TARGET_SITE_OPT=--set main.clusterGroupName=$(TARGET_SITE)
+endif
+
+# Set this to true if you want to skip any origin validation
+DISABLE_VALIDATE_ORIGIN ?= false
+ifeq ($(DISABLE_VALIDATE_ORIGIN),true)
+  VALIDATE_ORIGIN :=
+else
+  VALIDATE_ORIGIN := validate-origin
+endif
+
+# This variable can be set in order to pass additional helm arguments from the
+# the command line. I.e. we can set things without having to tweak values files
+EXTRA_HELM_OPTS ?=
+
+# This variable can be set in order to pass additional ansible-playbook arguments from the
+# the command line. I.e. we can set -vvv for more verbose logging
+EXTRA_PLAYBOOK_OPTS ?=
+
+# INDEX_IMAGES=registry-proxy.engineering.redhat.com/rh-osbs/iib:394248
+# or
+# INDEX_IMAGES=registry-proxy.engineering.redhat.com/rh-osbs/iib:394248,registry-proxy.engineering.redhat.com/rh-osbs/iib:394249
+INDEX_IMAGES ?=
+
+# git branch --show-current is also available as of git 2.22, but we will use this for compatibility
+TARGET_BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
+
+# Default to the branch remote
+TARGET_ORIGIN ?= $(shell git config branch.$(TARGET_BRANCH).remote)
+
+# This is to ensure that whether we start with a git@ or https:// URL, we end up with an https:// URL
+# This is because we expect to use tokens for repo authentication as opposed to SSH keys
+TARGET_REPO=$(shell git ls-remote --get-url --symref $(TARGET_ORIGIN) | sed -e 's/.*URL:[[:space:]]*//' -e 's%^git@%%' -e 's%^https://%%' -e 's%:%/%' -e 's%^%https://%')
+
+UUID_FILE ?= ~/.config/validated-patterns/pattern-uuid
+UUID_HELM_OPTS ?=
+
+# --set values always take precedence over the contents of -f
+ifneq ("$(wildcard $(UUID_FILE))","")
+	UUID := $(shell cat $(UUID_FILE))
+	UUID_HELM_OPTS := --set main.analyticsUUID=$(UUID)
+endif
+
+# Set the secret name *and* its namespace when deploying from private repositories
+# The format of said secret is documented here: https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/#repositories
+TOKEN_SECRET ?=
+TOKEN_NAMESPACE ?=
+
+ifeq ($(TOKEN_SECRET),)
+  HELM_OPTS=-f values-global.yaml --set main.git.repoURL="$(TARGET_REPO)" --set main.git.revision=$(TARGET_BRANCH) $(TARGET_SITE_OPT) $(UUID_HELM_OPTS) $(EXTRA_HELM_OPTS)
+else
+  # When we are working with a private repository we do not escape the git URL as it might be using an ssh secret which does not use https://
+  TARGET_CLEAN_REPO=$(shell git ls-remote --get-url --symref $(TARGET_ORIGIN))
+  HELM_OPTS=-f values-global.yaml --set main.tokenSecret=$(TOKEN_SECRET) --set main.tokenSecretNamespace=$(TOKEN_NAMESPACE) --set main.git.repoURL="$(TARGET_CLEAN_REPO)" --set main.git.revision=$(TARGET_BRANCH) $(TARGET_SITE_OPT) $(UUID_HELM_OPTS) $(EXTRA_HELM_OPTS)
+endif
+
+# Helm does the right thing and fetches all the tags and detects the newest one
+PATTERN_INSTALL_CHART ?= oci://quay.io/hybridcloudpatterns/pattern-install
+
+.PHONY: default
+default: help
+
+.PHONY: help
+help: ## This help message
+	@echo "Pattern: $(NAME)"
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^(\s|[a-zA-Z_0-9-])+:.*?##/ { printf "  \033[36m%-35s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+
+.PHONY: install
+USE_SECRETS ?= false
+install: operator-deploy ## Install the pattern (USE_SECRETS=true to load secrets)
+	@if [ "$(USE_SECRETS)" != "false" ]; then \
+		$(MAKE) post-install; \
+	fi
+	@echo "Installed"
+
+.PHONY: operator-deploy
+operator-deploy operator-upgrade: validate-prereq $(VALIDATE_ORIGIN) validate-cluster
+	@echo -n "Installing pattern: "
+	@RUNS=10; \
+	WAIT=15; \
+	for i in $$(seq 1 $$RUNS); do \
+		exec 3>&1 4>&2; \
+		OUT=$$( { helm template --include-crds --name-template $(NAME) $(PATTERN_INSTALL_CHART) $(HELM_OPTS) 2>&4 | oc apply -f- 2>&4 1>&3; } 4>&1 3>&1); \
+		ret=$$?; \
+		exec 3>&- 4>&-; \
+		if [ $$ret -eq 0 ]; then \
+			break; \
+		else \
+			echo -n "."; \
+			sleep "$$WAIT"; \
+		fi; \
+	done; \
+	if [ $$i -eq $$RUNS ]; then \
+		echo "Installation failed [$$i/$$RUNS]. Error:"; \
+		echo "$$OUT"; \
+		exit 1; \
+	fi
+	@echo "Done"
+
+.PHONY: validate-prereq
+validate-prereq:
+	$(eval GLOBAL_PATTERN := $(shell yq -r .global.pattern values-global.yaml))
+	@if [ $(NAME) != $(GLOBAL_PATTERN) ]; then\
+		echo "";\
+		echo "WARNING: folder directory is \"$(NAME)\" and global.pattern is set to \"$(GLOBAL_PATTERN)\"";\
+		echo "this can create problems. Please make sure they are the same!";\
+		echo "";\
+	fi
+	@if [ ! -f /run/.containerenv ]; then\
+	  echo "Checking prerequisites:";\
+	  echo -n "  Check for python-kubernetes: ";\
+	  if ! ansible -m ansible.builtin.command -a "{{ ansible_python_interpreter }} -c 'import kubernetes'" localhost > /dev/null 2>&1; then echo "Not found"; exit 1; fi;\
+	  echo "OK";\
+	  echo -n "  Check for kubernetes.core collection: ";\
+	  if ! ansible-galaxy collection list | grep kubernetes.core > /dev/null 2>&1; then echo "Not found"; exit 1; fi;\
+	  echo "OK";\
+	else\
+		if [ -f values-global.yaml ]; then\
+			OUT=`yq -r '.main.multiSourceConfig.enabled // (.main.multiSourceConfig.enabled = "false")' values-global.yaml`;\
+			if [ "$${OUT,,}" = "false" ]; then\
+				echo "You must set \".main.multiSourceConfig.enabled: true\" in your 'values-global.yaml' file";\
+				echo "because your common subfolder is the slimmed down version with no helm charts in it";\
+				exit 1;\
+			fi;\
+		fi;\
+	fi
+
+.PHONY: validate-origin
+validate-origin:
+	@echo "Checking repository:"
+	$(eval UPSTREAMURL := $(shell yq -r '.main.git.repoUpstreamURL // (.main.git.repoUpstreamURL = "")' values-global.yaml))
+	@if [ -z "$(UPSTREAMURL)" ]; then\
+		echo -n "  $(TARGET_REPO) - branch '$(TARGET_BRANCH)': ";\
+		git ls-remote --exit-code --heads $(TARGET_REPO) $(TARGET_BRANCH) >/dev/null &&\
+			echo "OK" || (echo "NOT FOUND"; exit 1);\
+	else\
+		echo "Upstream URL set to: $(UPSTREAMURL)";\
+		echo -n "  $(UPSTREAMURL) - branch '$(TARGET_BRANCH)': ";\
+		git ls-remote --exit-code --heads $(UPSTREAMURL) $(TARGET_BRANCH) >/dev/null &&\
+			echo "OK" || (echo "NOT FOUND"; exit 1);\
+	fi
+
+.PHONY: validate-cluster
+validate-cluster:
+	@echo "Checking cluster:"
+	@echo -n "  cluster-info: "
+	@oc cluster-info >/dev/null && echo "OK" || (echo "Error"; exit 1)
+	@echo -n "  storageclass: "
+	@if [ `oc get storageclass -o go-template='{{printf "%d\n" (len .items)}}'` -eq 0 ]; then\
+		echo "WARNING: No storageclass found";\
+	else\
+		echo "OK";\
+	fi
+
+.PHONY: post-install
+post-install:
+	make load-secrets
+	@echo "Done"
+
+.PHONY: load-secrets
+load-secrets: ## Load secrets into the configured backend
+	@PATTERN_NAME=$(NAME); \
+	PATTERN_DIR=$$(pwd); \
+	BACKEND=$$(yq '.global.secretStore.backend' "$$PATTERN_DIR/values-global.yaml" 2>/dev/null); \
+	if [ -z "$$BACKEND" -o "$$BACKEND" = "null" ]; then \
+		BACKEND="vault"; \
+	fi; \
+	ansible-playbook -e pattern_name="$$PATTERN_NAME" -e pattern_dir="$$PATTERN_DIR" -e secrets_backing_store="$$BACKEND" $(EXTRA_PLAYBOOK_OPTS) "rhvp.cluster_utils.process_secrets"
