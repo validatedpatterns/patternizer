@@ -5,9 +5,11 @@
 
 > **Note:** This tool was developed with assistance from [Cursor](https://cursor.sh), an AI-powered code editor.
 
-**Patternizer** is a CLI tool and container utility designed to bootstrap Validated Pattern repositories. It automatically generates the necessary `values-global.yaml` and `values-<cluster_group>.yaml` files by inspecting Git repositories, discovering Helm charts, and applying sensible defaults.
+**Patternizer** is a CLI tool and container utility designed to bootstrap Validated Pattern repositories. It automatically generates the necessary files for a Validated Pattern from a Git repo containing Helm charts.
 
-The tool provides both a standalone CLI and containerized execution for maximum flexibility and consistency across environments.
+Patternizer is available as a standalone CLI, however, it is most conventiently used from a container [as described below](#container-usage).
+
+By default, Patternizer will not add the necessary files and values for loading secrets as part of your pattern. This is to make it simpler and clearer as you develop patterns which pieces are needed. You are able to run [`init --with-secrets`](#basic-initialization) at any point, even if you already ran the init without the secrets flag, to add the scaffolding for secrets into your pattern. So don't be afraid to start without secrets and then add them in as you want more control over DB credentials, ssh keys, etc.. When/if you do decide to add secrets please reference the [Secrets Management](https://validatedpatterns.io/learn/secrets-management-in-the-validated-patterns-framework/) section of our site. Finally, while you can always run init again with the --with-secrets flag to add secrets to your pattern, you cannot then run the init command without that flag to remove the secrets scaffolding that was added. If you're worried you may have such a case, then you should commit your changes to Git before running the init command with the --with-secrets flag.
 
 ---
 
@@ -34,14 +36,23 @@ make dev-setup
 # See all available targets
 make help
 
-# Build and test
-make build
-make test
+# Quick feedback loop (format check, vet, build, unit tests)
+make check
 ```
 
 ---
 
 ## CLI Usage
+
+[Container usage](#container-usage) is recommended but you are also able to run the CLI directly by following the steps below.
+
+```bash
+# Build the binary
+make build
+
+# Copy the binary somewhere onto your $PATH
+cp src/patternizer /usr/local/bin
+```
 
 ### Available Commands
 
@@ -49,10 +60,10 @@ make test
 # Show help and available commands
 patternizer help
 
-# Initialize pattern files (without secrets)
+# Initialize pattern files (without secret loading)
 patternizer init
 
-# Initialize pattern files with secrets support
+# Initialize pattern files with secret loading
 patternizer init --with-secrets
 
 # Show help for specific commands
@@ -89,10 +100,10 @@ Use the prebuilt container from Quay without needing to install anything locally
 cd /path/to/your/pattern-repo
 
 # Initialize without secrets
-podman run --rm -it -v .:/repo:z quay.io/dminnear/patternizer init
+podman run --pull=always --rm -it -v .:/repo:z quay.io/dminnear/patternizer init
 
 # Initialize with secrets support
-podman run --rm -it -v .:/repo:z quay.io/dminnear/patternizer init --with-secrets
+podman run --pull=always --rm -it -v .:/repo:z quay.io/dminnear/patternizer init --with-secrets
 ```
 
 ---
@@ -103,16 +114,19 @@ podman run --rm -it -v .:/repo:z quay.io/dminnear/patternizer init --with-secret
    ```bash
    git clone https://github.com/your-org/your-pattern.git
    cd your-pattern
+   git checkout -b run-patternizer
    ```
 
 2. **Initialize the pattern:**
    ```bash
-   podman run --rm -it -v .:/repo:z quay.io/dminnear/patternizer init
+   podman run --pull=always --rm -it -v .:/repo:z quay.io/dminnear/patternizer init
    ```
 
-3. **Review generated files:**
+3. **Commit and push generated files:**
    ```bash
-   ls -la values-*.yaml pattern.sh Makefile*
+   git add .
+   git commit -m 'initialize pattern using patternizer'
+   git push -u origin run-patternizer
    ```
 
 4. **Install the pattern:**
@@ -156,7 +170,7 @@ make test-unit
 # Run only integration tests
 make test-integration
 
-# Build container image locally
+# Build container image locally (as `patternizer:local`)
 make local-container-build
 
 # Run full CI pipeline locally
@@ -318,9 +332,7 @@ This modular design makes the codebase maintainable, testable, and extensible.
 4. Run the development workflow:
    ```bash
    make dev-setup  # Set up development environment
-   make check      # Quick feedback loop
-   make test       # Run all tests
-   make lint       # Run all linting checks
+   make ci         # Lint/build/test your changes in one step
    ```
 5. Submit a pull request
 
