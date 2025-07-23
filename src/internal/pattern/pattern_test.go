@@ -140,8 +140,8 @@ func TestProcessGlobalValuesPreservesFields(t *testing.T) {
 		t.Fatalf("Failed to write initial values file: %v", err)
 	}
 
-	// Process the values
-	actualPatternName, clusterGroupName, err := ProcessGlobalValues("new-pattern", tempDir)
+	// Process the values (test without secrets)
+	actualPatternName, clusterGroupName, err := ProcessGlobalValues("new-pattern", tempDir, false)
 	if err != nil {
 		t.Fatalf("ProcessGlobalValues failed: %v", err)
 	}
@@ -343,8 +343,8 @@ func TestProcessGlobalValuesWithNewFile(t *testing.T) {
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Process values without existing file
-	actualPatternName, clusterGroupName, err := ProcessGlobalValues("test-pattern", tempDir)
+	// Process values without existing file (test without secrets)
+	actualPatternName, clusterGroupName, err := ProcessGlobalValues("test-pattern", tempDir, false)
 	if err != nil {
 		t.Fatalf("ProcessGlobalValues failed: %v", err)
 	}
@@ -385,6 +385,56 @@ func TestProcessGlobalValuesWithNewFile(t *testing.T) {
 	}
 	if values.Main.MultiSourceConfig.ClusterGroupChartVersion != "0.9.*" {
 		t.Errorf("ClusterGroupChartVersion = %s, expected '0.9.*'", values.Main.MultiSourceConfig.ClusterGroupChartVersion)
+	}
+	if !values.Global.SecretLoader.Disabled {
+		t.Error("SecretLoader.Disabled should be true when withSecrets=false")
+	}
+}
+
+// TestProcessGlobalValuesWithSecrets tests ProcessGlobalValues with withSecrets=true.
+func TestProcessGlobalValuesWithSecrets(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "pattern-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Process values without existing file (test with secrets)
+	actualPatternName, clusterGroupName, err := ProcessGlobalValues("test-pattern", tempDir, true)
+	if err != nil {
+		t.Fatalf("ProcessGlobalValues failed: %v", err)
+	}
+
+	// Verify return values
+	if actualPatternName != "test-pattern" {
+		t.Errorf("Expected pattern name 'test-pattern', got '%s'", actualPatternName)
+	}
+	if clusterGroupName != "prod" { // Default cluster group name
+		t.Errorf("Expected cluster group name 'prod', got '%s'", clusterGroupName)
+	}
+
+	// Verify file was created with defaults
+	valuesPath := filepath.Join(tempDir, "values-global.yaml")
+	if _, err := os.Stat(valuesPath); os.IsNotExist(err) {
+		t.Fatal("values-global.yaml was not created")
+	}
+
+	// Read and verify content
+	data, err := os.ReadFile(valuesPath)
+	if err != nil {
+		t.Fatalf("Failed to read created file: %v", err)
+	}
+
+	var values types.ValuesGlobal
+	if err := yaml.Unmarshal(data, &values); err != nil {
+		t.Fatalf("Failed to unmarshal created file: %v", err)
+	}
+
+	if values.Global.Pattern != "test-pattern" {
+		t.Errorf("Global pattern = %s, expected 'test-pattern'", values.Global.Pattern)
+	}
+	if values.Global.SecretLoader.Disabled {
+		t.Error("SecretLoader.Disabled should be false when withSecrets=true")
 	}
 }
 

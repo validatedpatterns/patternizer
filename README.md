@@ -3,6 +3,8 @@
 [![Quay Repository](https://img.shields.io/badge/Quay.io-patternizer-blue?logo=quay)](https://quay.io/repository/dminnear/patternizer)
 [![CI Pipeline](https://github.com/dminnear-rh/patternizer/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/dminnear-rh/patternizer/actions/workflows/ci.yaml)
 
+> **Note:** This tool was developed with assistance from [Cursor](https://cursor.sh), an AI-powered code editor.
+
 **Patternizer** is a CLI tool and container utility designed to bootstrap Validated Pattern repositories. It automatically generates the necessary `values-global.yaml` and `values-<cluster_group>.yaml` files by inspecting Git repositories, discovering Helm charts, and applying sensible defaults.
 
 The tool provides both a standalone CLI and containerized execution for maximum flexibility and consistency across environments.
@@ -61,17 +63,18 @@ patternizer init help
 
 The `patternizer init` command generates:
 
-- `values-global.yaml` - Global pattern configuration
+- `values-global.yaml` - Global pattern configuration with `global.secretLoader.disabled: true`
 - `values-<cluster_group>.yaml` - Cluster group-specific configuration
 - `pattern.sh` - Utility script for pattern operations
-- `Makefile` - Self-contained Makefile with inlined scripts for pattern management
+- `Makefile` - Simple include-based Makefile that includes `Makefile-pattern`
+- `Makefile-pattern` - Contains all pattern targets and dynamically reads secrets config from `values-global.yaml`
 
 When using `--with-secrets`:
 - `values-secret.yaml.template` - Template for secrets configuration
-- Modified `pattern.sh` with `USE_SECRETS=true` as default
-- Modified `Makefile` with `USE_SECRETS=true` as default
+- `values-global.yaml` with `global.secretLoader.disabled: false` (enables secrets)
+- Additional applications (vault, golang-external-secrets) in cluster group values
 
-Both `pattern.sh` and `Makefile` provide equivalent functionality for pattern installation and management, with the Makefile offering a more traditional build tool approach.
+The secrets loading behavior is controlled entirely by the `global.secretLoader.disabled` field in `values-global.yaml`.
 
 ---
 
@@ -109,7 +112,7 @@ podman run --rm -it -v .:/repo:z quay.io/dminnear/patternizer init --with-secret
 
 3. **Review generated files:**
    ```bash
-   ls -la values-*.yaml pattern.sh
+   ls -la values-*.yaml pattern.sh Makefile*
    ```
 
 4. **Install the pattern:**
@@ -217,6 +220,10 @@ The project includes comprehensive unit tests across multiple packages:
   - Adds new applications while maintaining existing ones
   - Maintains custom fields within applications and subscriptions
 - `TestProcessGlobalValuesWithNewFile()` - New file creation with proper defaults
+- `TestProcessGlobalValuesWithSecrets()` - Validates secrets configuration:
+  - Tests `ProcessGlobalValues` with `withSecrets=true`
+  - Verifies `global.secretLoader.disabled: false` is set correctly
+  - Ensures secrets-enabled configuration is properly generated
 
 ### Integration Tests
 
@@ -225,29 +232,30 @@ The integration test suite (`test/integration_test.sh`) validates the complete C
 **Test 1: Basic Initialization (Without Secrets)**
 - Clones the [trivial-pattern](https://github.com/dminnear-rh/trivial-pattern) repository
 - Runs `patternizer init` and validates generated files
-- Verifies `values-global.yaml` and `values-prod.yaml` content using YAML normalization
-- Ensures `pattern.sh` is created with `USE_SECRETS=false` and executable permissions
-- Validates `Makefile` is created with `USE_SECRETS=false` and contains proper functionality
+- Verifies `values-global.yaml` contains `global.secretLoader.disabled: true`
+- Validates `values-prod.yaml` content using YAML normalization
+- Ensures `pattern.sh` is created and executable
+- Validates `Makefile` (include-based) and `Makefile-pattern` are created
 
 **Test 2: Initialization with Secrets**
 - Tests `patternizer init --with-secrets` functionality
+- Verifies `values-global.yaml` contains `global.secretLoader.disabled: false`
 - Validates secrets-specific applications (vault, golang-external-secrets) are added
 - Verifies additional namespaces and `values-secret.yaml.template` are created
-- Ensures `pattern.sh` is configured with `USE_SECRETS=true`
-- Validates `Makefile` is configured with `USE_SECRETS=true` and contains secrets support
+- Ensures `pattern.sh` and both Makefile files are properly generated
 
 **Test 3: Custom Pattern and Cluster Group Names**
 - Tests field preservation and intelligent merging of existing configurations
 - Pre-populates custom `values-global.yaml` with renamed pattern and cluster group
 - Verifies custom names are preserved while adding missing default configurations
 - Validates custom cluster group file generation (e.g., `values-renamed-cluster-group.yaml`)
-- Ensures both `pattern.sh` and `Makefile` are configured correctly for the custom setup
+- Ensures `global.secretLoader.disabled: false` is set correctly with `--with-secrets`
 
 **Test 4: Sequential Execution**
 - Tests running `patternizer init` followed by `patternizer init --with-secrets`
 - Validates that the second command properly upgrades the configuration
-- Ensures final state matches direct `--with-secrets` execution
-- Verifies both `pattern.sh` and `Makefile` are updated correctly in the sequential workflow
+- Ensures `global.secretLoader.disabled` transitions from `true` to `false`
+- Verifies final state matches direct `--with-secrets` execution
 
 Run integration tests locally:
 ```bash

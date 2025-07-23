@@ -73,7 +73,7 @@ func extractPatternNameFromURL(url string) (string, error) {
 
 // ProcessGlobalValues processes the global values YAML file.
 // It returns the pattern name and cluster group name that should be used (from the file if they exist, or the detected/default names).
-func ProcessGlobalValues(patternName, repoRoot string) (actualPatternName, clusterGroupName string, err error) {
+func ProcessGlobalValues(patternName, repoRoot string, withSecrets bool) (actualPatternName, clusterGroupName string, err error) {
 	globalValuesPath := filepath.Join(repoRoot, "values-global.yaml")
 	values := types.NewDefaultValuesGlobal()
 
@@ -94,6 +94,11 @@ func ProcessGlobalValues(patternName, repoRoot string) (actualPatternName, clust
 	if values.Global.Pattern == "" {
 		values.Global.Pattern = patternName
 	}
+
+	// Set secretLoader.disabled based on withSecrets flag
+	// If withSecrets is true, we want secretLoader to be enabled (disabled = false)
+	// If withSecrets is false, we want secretLoader to be disabled (disabled = true)
+	values.Global.SecretLoader.Disabled = !withSecrets
 
 	// Write back the merged values
 	finalYamlBytes, err := yaml.Marshal(values)

@@ -3,6 +3,38 @@ description: lint/build/test any changes to source code
 alwaysApply: true
 ---
 
-- Any changs to the the Go CLI source code need to be vetted with `make ci` which will lint, build, and test the CLI
+## Go Source Code Testing Rule
+
+**ALWAYS use `make ci` for testing Go code changes - NEVER run manual go test commands**
+
+### When to Apply This Rule:
+- Any changes to Go source code in the `src/` directory
+- When you want to verify that changes work correctly
+- Before proposing code changes to the user
+- When debugging build/test issues
+
+### What to Use:
+- ✅ **CORRECT**: `make ci` - This runs the complete CI pipeline locally (lint, build, test)
+- ❌ **WRONG**: `cd src && go test ./... -v` - Manual go test commands
+- ❌ **WRONG**: `go build`, `go test`, etc. - Direct go commands
+- ❌ **WRONG**: `make test-unit` or other individual targets when you want full verification
+
+### Why This Rule Exists:
+- `make ci` ensures consistency with the actual CI pipeline
+- It runs linting, formatting checks, building, AND testing in the correct order
+- It catches issues that manual testing might miss
+- It's the same command developers use locally
+
+### The Command to Use:
+```bash
+make ci
+```
+
+This will:
+1. Run all linting checks (`make lint`)
+2. Build the binary (`make build`)
+3. Run unit tests (`make test-unit`)
+4. Run integration tests (`make test-integration`)
+5. Generate coverage reports
 
 @Makefile

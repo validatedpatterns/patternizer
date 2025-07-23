@@ -1,9 +1,16 @@
 package types
 
+// SecretLoader represents the 'secretLoader' section under 'global'.
+type SecretLoader struct {
+	Disabled    bool                   `yaml:"disabled"`
+	OtherFields map[string]interface{} `yaml:",inline"`
+}
+
 // Global represents the 'global' section of the YAML file.
 type Global struct {
-	Pattern     string                 `yaml:"pattern"`
-	OtherFields map[string]interface{} `yaml:",inline"`
+	Pattern      string                 `yaml:"pattern"`
+	SecretLoader SecretLoader           `yaml:"secretLoader"`
+	OtherFields  map[string]interface{} `yaml:",inline"`
 }
 
 // Main represents the 'main' section of the YAML file.
@@ -30,7 +37,11 @@ type ValuesGlobal struct {
 // NewDefaultValuesGlobal creates a ValuesGlobal struct with all the default values.
 func NewDefaultValuesGlobal() *ValuesGlobal {
 	return &ValuesGlobal{
-		Global: Global{},
+		Global: Global{
+			SecretLoader: SecretLoader{
+				Disabled: true,
+			},
+		},
 		Main: Main{
 			ClusterGroupName: "prod",
 			MultiSourceConfig: MultiSourceConfig{

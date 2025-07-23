@@ -69,8 +69,16 @@ help: ## This help message
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^(\s|[a-zA-Z_0-9-])+:.*?##/ { printf "  \033[36m%-35s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
 .PHONY: install
-USE_SECRETS ?= false
-install: operator-deploy ## Install the pattern (USE_SECRETS=true to load secrets)
+# Dynamically read secretLoader.disabled from values-global.yaml to determine USE_SECRETS
+# If secretLoader.disabled is true, USE_SECRETS should be false (secrets disabled)
+# If secretLoader.disabled is false, USE_SECRETS should be true (secrets enabled)
+USE_SECRETS := $(shell if [ -f values-global.yaml ]; then \
+	DISABLED=$$(yq -r '.global.secretLoader.disabled // true' values-global.yaml 2>/dev/null || echo "true"); \
+	if [ "$$DISABLED" = "false" ]; then echo "true"; else echo "false"; fi; \
+else \
+	echo "false"; \
+fi)
+install: operator-deploy ## Install the pattern (USE_SECRETS determined by global.secretLoader.disabled in values-global.yaml)
 	@if [ "$(USE_SECRETS)" != "false" ]; then \
 		$(MAKE) post-install; \
 	fi

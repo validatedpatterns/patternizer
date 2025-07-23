@@ -36,6 +36,7 @@ REPO_ROOT=$(pwd)
 
 # Set absolute paths to expected files
 EXPECTED_VALUES_GLOBAL="$REPO_ROOT/test/expected_values_global.yaml"
+EXPECTED_VALUES_GLOBAL_WITH_SECRETS="$REPO_ROOT/test/expected_values_global_with_secrets.yaml"
 EXPECTED_VALUES_PROD="$REPO_ROOT/test/expected_values_prod.yaml"
 EXPECTED_VALUES_PROD_WITH_SECRETS="$REPO_ROOT/test/expected_values_prod_with_secrets.yaml"
 EXPECTED_VALUES_GLOBAL_CUSTOM="$REPO_ROOT/test/expected_values_global_custom.yaml"
@@ -162,10 +163,7 @@ compare_yaml "$EXPECTED_VALUES_GLOBAL" "values-global.yaml" "values-global.yaml 
 # Test 1.2: Check values-prod.yaml
 compare_yaml "$EXPECTED_VALUES_PROD" "values-prod.yaml" "values-prod.yaml content"
 
-# Test 1.3: Check pattern.sh exists and has USE_SECRETS=false
-check_file_content "pattern.sh" 'USE_SECRETS:=false' "pattern.sh contains USE_SECRETS=false"
-
-# Test 1.4: Verify pattern.sh is executable
+# Test 1.3: Verify pattern.sh is executable
 if [ -x "pattern.sh" ]; then
     echo -e "${GREEN}PASS: pattern.sh is executable${NC}"
 else
@@ -173,9 +171,11 @@ else
     exit 1
 fi
 
-# Test 1.5: Check Makefile exists and has USE_SECRETS=false
+# Test 1.4: Check Makefile exists (simple include-based Makefile)
 check_file_exists "Makefile" "Makefile exists (init without secrets)"
-check_file_content "Makefile" 'USE_SECRETS ?= false' "Makefile contains USE_SECRETS=false"
+
+# Test 1.5: Check Makefile-pattern exists (contains the actual targets)
+check_file_exists "Makefile-pattern" "Makefile-pattern exists (init without secrets)"
 
 echo -e "${GREEN}=== Test 1: Basic initialization PASSED ===${NC}"
 
@@ -194,16 +194,13 @@ PATTERNIZER_RESOURCES_DIR="$REPO_ROOT" "$PATTERNIZER_BINARY" init --with-secrets
 
 echo -e "${YELLOW}Running verification tests for secrets...${NC}"
 
-# Test 2.1: Check values-global.yaml (should be same as without secrets)
-compare_yaml "$EXPECTED_VALUES_GLOBAL" "values-global.yaml" "values-global.yaml content (with secrets)"
+# Test 2.1: Check values-global.yaml (secretLoader.disabled should be false with secrets)
+compare_yaml "$EXPECTED_VALUES_GLOBAL_WITH_SECRETS" "values-global.yaml" "values-global.yaml content (with secrets)"
 
 # Test 2.2: Check values-prod.yaml with secrets applications
 compare_yaml "$EXPECTED_VALUES_PROD_WITH_SECRETS" "values-prod.yaml" "values-prod.yaml content (with secrets)"
 
-# Test 2.3: Check pattern.sh exists and has USE_SECRETS=true
-check_file_content "pattern.sh" 'USE_SECRETS:=true' "pattern.sh contains USE_SECRETS=true"
-
-# Test 2.4: Verify pattern.sh is executable
+# Test 2.3: Verify pattern.sh is executable
 if [ -x "pattern.sh" ]; then
     echo -e "${GREEN}PASS: pattern.sh is executable (with secrets)${NC}"
 else
@@ -211,12 +208,14 @@ else
     exit 1
 fi
 
-# Test 2.5: Check values-secret.yaml.template exists
+# Test 2.4: Check values-secret.yaml.template exists
 check_file_exists "values-secret.yaml.template" "values-secret.yaml.template file exists"
 
-# Test 2.6: Check Makefile exists and has USE_SECRETS=true
+# Test 2.5: Check Makefile exists (simple include-based Makefile)
 check_file_exists "Makefile" "Makefile exists (init with secrets)"
-check_file_content "Makefile" 'USE_SECRETS ?= true' "Makefile contains USE_SECRETS=true"
+
+# Test 2.6: Check Makefile-pattern exists (contains the actual targets)
+check_file_exists "Makefile-pattern" "Makefile-pattern exists (init with secrets)"
 
 echo -e "${GREEN}=== Test 2: Initialization with secrets PASSED ===${NC}"
 
@@ -244,10 +243,7 @@ compare_yaml "$EXPECTED_VALUES_GLOBAL_CUSTOM" "values-global.yaml" "values-globa
 # Test 3.2: Check custom cluster group file is created with correct content
 compare_yaml "$EXPECTED_VALUES_RENAMED_CLUSTER_GROUP" "values-renamed-cluster-group.yaml" "values-renamed-cluster-group.yaml content"
 
-# Test 3.3: Check pattern.sh exists and has USE_SECRETS=true
-check_file_content "pattern.sh" 'USE_SECRETS:=true' "pattern.sh contains USE_SECRETS=true (custom names)"
-
-# Test 3.4: Verify pattern.sh is executable
+# Test 3.3: Verify pattern.sh is executable
 if [ -x "pattern.sh" ]; then
     echo -e "${GREEN}PASS: pattern.sh is executable (custom names)${NC}"
 else
@@ -255,12 +251,14 @@ else
     exit 1
 fi
 
-# Test 3.5: Check values-secret.yaml.template exists
+# Test 3.4: Check values-secret.yaml.template exists
 check_file_exists "values-secret.yaml.template" "values-secret.yaml.template file exists (custom names)"
 
-# Test 3.6: Check Makefile exists and has USE_SECRETS=true
+# Test 3.5: Check Makefile exists (simple include-based Makefile)
 check_file_exists "Makefile" "Makefile exists (custom names with secrets)"
-check_file_content "Makefile" 'USE_SECRETS ?= true' "Makefile contains USE_SECRETS=true (custom names)"
+
+# Test 3.6: Check Makefile-pattern exists (contains the actual targets)
+check_file_exists "Makefile-pattern" "Makefile-pattern exists (custom names with secrets)"
 
 echo -e "${GREEN}=== Test 3: Custom pattern and cluster group names (with secrets) PASSED ===${NC}"
 
@@ -289,16 +287,13 @@ PATTERNIZER_RESOURCES_DIR="$REPO_ROOT" "$PATTERNIZER_BINARY" init --with-secrets
 
 echo -e "${YELLOW}Running verification tests for sequential execution...${NC}"
 
-# Test 4.1: Check values-global.yaml (should be same as basic case)
-compare_yaml "$EXPECTED_VALUES_GLOBAL" "values-global.yaml" "values-global.yaml content (sequential)"
+# Test 4.1: Check values-global.yaml (should have secretLoader.disabled=false after --with-secrets)
+compare_yaml "$EXPECTED_VALUES_GLOBAL_WITH_SECRETS" "values-global.yaml" "values-global.yaml content (sequential)"
 
 # Test 4.2: Check values-prod.yaml matches the --with-secrets output
 compare_yaml "$EXPECTED_VALUES_PROD_WITH_SECRETS" "values-prod.yaml" "values-prod.yaml content (sequential, should match --with-secrets)"
 
-# Test 4.3: Check pattern.sh exists and has USE_SECRETS=true
-check_file_content "pattern.sh" 'USE_SECRETS:=true' "pattern.sh contains USE_SECRETS=true (sequential)"
-
-# Test 4.4: Verify pattern.sh is executable
+# Test 4.3: Verify pattern.sh is executable
 if [ -x "pattern.sh" ]; then
     echo -e "${GREEN}PASS: pattern.sh is executable (sequential)${NC}"
 else
@@ -306,12 +301,14 @@ else
     exit 1
 fi
 
-# Test 4.5: Check values-secret.yaml.template exists
+# Test 4.4: Check values-secret.yaml.template exists
 check_file_exists "values-secret.yaml.template" "values-secret.yaml.template file exists (sequential)"
 
-# Test 4.6: Check Makefile exists and has USE_SECRETS=true
+# Test 4.5: Check Makefile exists (simple include-based Makefile)
 check_file_exists "Makefile" "Makefile exists (sequential execution)"
-check_file_content "Makefile" 'USE_SECRETS ?= true' "Makefile contains USE_SECRETS=true (sequential)"
+
+# Test 4.6: Check Makefile-pattern exists (contains the actual targets)
+check_file_exists "Makefile-pattern" "Makefile-pattern exists (sequential execution)"
 
 echo -e "${GREEN}=== Test 4: Sequential execution PASSED ===${NC}"
 
