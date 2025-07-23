@@ -1,5 +1,7 @@
 global:
   pattern: renamed-pattern
+  secretLoader:
+    disabled: false
 main:
   clusterGroupName: renamed-cluster-group
   multiSourceConfig:

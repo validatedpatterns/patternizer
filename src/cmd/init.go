@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/dminnear-rh/patternizer/internal/fileutils"
@@ -24,7 +25,7 @@ func runInit(withSecrets bool) error {
 	}
 
 	// Process values-global.yaml
-	actualPatternName, clusterGroupName, err := pattern.ProcessGlobalValues(patternName, repoRoot)
+	actualPatternName, clusterGroupName, err := pattern.ProcessGlobalValues(patternName, repoRoot, withSecrets)
 	if err != nil {
 		return fmt.Errorf("error processing global values: %w", err)
 	}
@@ -46,21 +47,19 @@ func runInit(withSecrets bool) error {
 		return fmt.Errorf("error copying pattern.sh: %w", err)
 	}
 
-	// Set USE_SECRETS in pattern.sh based on the flag
-	if err := fileutils.ModifyPatternShScript(patternShDst, withSecrets); err != nil {
-		return fmt.Errorf("error modifying pattern.sh: %w", err)
+	// Always copy Makefile-pattern to the pattern repo
+	makefilePatternSrc := filepath.Join(resourcesDir, "Makefile-pattern")
+	makefilePatternDst := filepath.Join(repoRoot, "Makefile-pattern")
+	if err := fileutils.CopyFile(makefilePatternSrc, makefilePatternDst); err != nil {
+		return fmt.Errorf("error copying Makefile-pattern: %w", err)
 	}
 
-	// Copy and modify Makefile
-	makefileSrc := filepath.Join(resourcesDir, "Makefile-pattern")
+	// Create a simple Makefile that includes Makefile-pattern (only if it doesn't exist)
 	makefileDst := filepath.Join(repoRoot, "Makefile")
-	if err := fileutils.CopyFile(makefileSrc, makefileDst); err != nil {
-		return fmt.Errorf("error copying Makefile: %w", err)
-	}
-
-	// Set USE_SECRETS in Makefile based on the flag
-	if err := fileutils.ModifyMakefileScript(makefileDst, withSecrets); err != nil {
-		return fmt.Errorf("error modifying Makefile: %w", err)
+	if _, err := os.Stat(makefileDst); os.IsNotExist(err) {
+		if err := fileutils.CreateIncludeMakefile(makefileDst); err != nil {
+			return fmt.Errorf("error creating Makefile: %w", err)
+		}
 	}
 
 	// Handle secrets setup if requested
