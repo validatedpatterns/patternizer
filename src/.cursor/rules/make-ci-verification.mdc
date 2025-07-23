@@ -1,0 +1,8 @@
+---
+description: lint/build/test any changes to source code
+alwaysApply: true
+---
+
+- Any changs to the the Go CLI source code need to be vetted with `make ci` which will lint, build, and test the CLI
+
+@Makefile
