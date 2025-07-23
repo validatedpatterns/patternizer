@@ -3,351 +3,191 @@
 [![Quay Repository](https://img.shields.io/badge/Quay.io-patternizer-blue?logo=quay)](https://quay.io/repository/dminnear/patternizer)
 [![CI Pipeline](https://github.com/dminnear-rh/patternizer/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/dminnear-rh/patternizer/actions/workflows/ci.yaml)
 
+**Patternizer** is a command-line tool that bootstraps a Git repository containing Helm charts into a ready-to-use Validated Pattern. It automatically generates the necessary scaffolding, configuration files, and utility scripts, so you can get your pattern up and running in minutes.
+
 > **Note:** This tool was developed with assistance from [Cursor](https://cursor.sh), an AI-powered code editor.
 
-**Patternizer** is a CLI tool and container utility designed to bootstrap Validated Pattern repositories. It automatically generates the necessary files for a Validated Pattern from a Git repo containing Helm charts.
-
-Patternizer is available as a standalone CLI, however, it is most conventiently used from a container [as described below](#container-usage).
-
-By default, Patternizer will not add the necessary files and values for loading secrets as part of your pattern. This is to make it simpler and clearer as you develop patterns which pieces are needed. You are able to run [`init --with-secrets`](#basic-initialization) at any point, even if you already ran the init without the secrets flag, to add the scaffolding for secrets into your pattern. So don't be afraid to start without secrets and then add them in as you want more control over DB credentials, ssh keys, etc.. When/if you do decide to add secrets please reference the [Secrets Management](https://validatedpatterns.io/learn/secrets-management-in-the-validated-patterns-framework/) section of our site. Finally, while you can always run init again with the --with-secrets flag to add secrets to your pattern, you cannot then run the init command without that flag to remove the secrets scaffolding that was added. If you're worried you may have such a case, then you should commit your changes to Git before running the init command with the --with-secrets flag.
-
----
+- [Patternizer](#patternizer)
+  - [Features](#features)
+  - [Quick Start](#quick-start)
+  - [Example Workflow](#example-workflow)
+  - [Usage Details](#usage-details)
+    - [Container Usage (Recommended)](#container-usage-recommended)
+      - [**Initialize without secrets:**](#initialize-without-secrets)
+      - [**Initialize with secrets support:**](#initialize-with-secrets-support)
+    - [Understanding Secrets Management](#understanding-secrets-management)
+    - [Generated Files](#generated-files)
+  - [Development \& Contributing](#development--contributing)
+    - [Prerequisites](#prerequisites)
+    - [Local Development Workflow](#local-development-workflow)
+    - [Common Makefile Targets](#common-makefile-targets)
+    - [Testing Strategy](#testing-strategy)
+    - [Architecture](#architecture)
+    - [CI/CD Pipeline](#cicd-pipeline)
+    - [How to Contribute](#how-to-contribute)
 
 ## Features
 
-- 🚀 **CLI-first design** with intuitive commands and help system
-- 📦 **Container support** for consistent execution across environments
-- 🔍 **Auto-discovery** of Helm charts and Git repository metadata
-- 🔐 **Secrets integration** with Vault and External Secrets support
-- ✅ **Comprehensive testing** with unit and integration tests
-- 🏗️ **Multi-stage builds** for minimal container images
-- 🛠️ **Makefile-driven development** for consistent local development and CI
+  - 🚀 **CLI-first design** with intuitive commands and help system
+  - 📦 **Container-native** for consistent execution across all environments
+  - 🔍 **Auto-discovery** of Helm charts and Git repository metadata
+  - 🔐 **Optional secrets integration** with Vault and External Secrets
+  - 🏗️ **Makefile-driven** utility scripts for easy pattern management
 
-## Quick Start for Developers
+## Quick Start
 
-```bash
-# Clone the repository
-git clone https://github.com/dminnear-rh/patternizer.git
-cd patternizer
+This guide assumes you have a Git repository containing one or more Helm charts.
 
-# Set up development environment
-make dev-setup
+**Prerequisites:**
 
-# See all available targets
-make help
+  * Podman or Docker
+  * A Git repository you want to convert into a pattern
 
-# Quick feedback loop (format check, vet, build, unit tests)
-make check
-```
-
----
-
-## CLI Usage
-
-[Container usage](#container-usage) is recommended but you are also able to run the CLI directly by following the steps below.
+Navigate to your repository's root directory and run the initialization command:
 
 ```bash
-# Build the binary
-make build
-
-# Copy the binary somewhere onto your $PATH
-cp src/patternizer /usr/local/bin
-```
-
-### Available Commands
-
-```bash
-# Show help and available commands
-patternizer help
-
-# Initialize pattern files (without secret loading)
-patternizer init
-
-# Initialize pattern files with secret loading
-patternizer init --with-secrets
-
-# Show help for specific commands
-patternizer init help
-```
-
-### Output Files
-
-The `patternizer init` command generates:
-
-- `values-global.yaml` - Global pattern configuration with `global.secretLoader.disabled: true`
-- `values-<cluster_group>.yaml` - Cluster group-specific configuration
-- `pattern.sh` - Utility script for pattern operations
-- `Makefile` - Simple include-based Makefile that includes `Makefile-pattern`
-- `Makefile-pattern` - Contains all pattern targets and dynamically reads secrets config from `values-global.yaml`
-
-When using `--with-secrets`:
-- `values-secret.yaml.template` - Template for secrets configuration
-- `values-global.yaml` with `global.secretLoader.disabled: false` (enables secrets)
-- Additional applications (vault, golang-external-secrets) in cluster group values
-
-The secrets loading behavior is controlled entirely by the `global.secretLoader.disabled` field in `values-global.yaml`.
-
----
-
-## Container Usage
-
-Use the prebuilt container from Quay without needing to install anything locally:
-
-### Basic Initialization
-
-```bash
-# Navigate to your pattern repository
-cd /path/to/your/pattern-repo
-
-# Initialize without secrets
+# In the root of your pattern-repo
 podman run --pull=always --rm -it -v .:/repo:z quay.io/dminnear/patternizer init
-
-# Initialize with secrets support
-podman run --pull=always --rm -it -v .:/repo:z quay.io/dminnear/patternizer init --with-secrets
 ```
 
----
+This single command will generate all the necessary files to turn your repository into a Validated Pattern.
 
 ## Example Workflow
 
-1. **Clone or create a pattern repository:**
-   ```bash
-   git clone https://github.com/your-org/your-pattern.git
-   cd your-pattern
-   git checkout -b run-patternizer
-   ```
+1.  **Clone or create your pattern repository:**
 
-2. **Initialize the pattern:**
-   ```bash
-   podman run --pull=always --rm -it -v .:/repo:z quay.io/dminnear/patternizer init
-   ```
+    ```bash
+    git clone https://github.com/your-org/your-pattern.git
+    cd your-pattern
+    git checkout -b initialize-pattern
+    ```
 
-3. **Commit and push generated files:**
-   ```bash
-   git add .
-   git commit -m 'initialize pattern using patternizer'
-   git push -u origin run-patternizer
-   ```
+2.  **Initialize the pattern using Patternizer:**
 
-4. **Install the pattern:**
-   ```bash
-   ./pattern.sh make install
-   ```
+    ```bash
+    podman run --pull=always --rm -it -v .:/repo:z quay.io/dminnear/patternizer init
+    ```
 
----
+3.  **Review, commit, and push the generated files:**
 
-## Development
+    ```bash
+    git status
+    git add .
+    git commit -m 'initialize pattern using patternizer'
+    git push -u origin initialize-pattern
+    ```
+
+4.  **Install the pattern:**
+
+    ```bash
+    ./pattern.sh make install
+    ```
+
+## Usage Details
+
+### Container Usage (Recommended)
+
+Using the prebuilt container is the easiest way to run Patternizer, as it requires no local installation. The `-v .:/repo:z` flag mounts your current directory into the container's `/repo` workspace.
+
+#### **Initialize without secrets:**
+
+```bash
+podman run --pull=always --rm -it -v .:/repo:z quay.io/dminnear/patternizer init
+```
+
+#### **Initialize with secrets support:**
+
+```bash
+podman run --pull=always --rm -it -v .:/repo:z quay.io/dminnear/patternizer init --with-secrets
+```
+
+### Understanding Secrets Management
+
+You can start simple and add secrets management later.
+
+  * By default, `patternizer init` disables secret loading.
+  * To add secrets scaffolding, run `patternizer init --with-secrets` at any time. This will update your configuration to enable secrets.
+  * **Important:** This action is not easily reversible. We recommend committing your work to Git *before* adding secrets support.
+
+For more details on how secrets work in the framework, see the [Secrets Management Documentation](https://validatedpatterns.io/learn/secrets-management-in-the-validated-patterns-framework/).
+
+### Generated Files
+
+Running `patternizer init` creates the following:
+
+  * `values-global.yaml`: Global pattern configuration.
+  * `values-<cluster_group>.yaml`: Cluster group-specific values.
+  * `pattern.sh`: A utility script for common pattern operations (`install`, `upgrade`, etc.).
+  * `Makefile`: A simple Makefile that includes `Makefile-pattern`.
+  * `Makefile-pattern`: The core Makefile with all pattern-related targets.
+
+Using the `--with-secrets` flag additionally creates:
+
+  * `values-secret.yaml.template`: A template for defining your secrets.
+  * It also updates `values-global.yaml` to set `global.secretLoader.disabled: false` and adds Vault and External Secrets Operator to the cluster group values.
+
+## Development & Contributing
+
+This section is for developers who want to contribute to the Patternizer project itself.
 
 ### Prerequisites
 
-- Go 1.24+
-- Podman or Docker
-- Git
-- Make
+  * Go (see `go.mod` for version)
+  * Podman or Docker
+  * Git
+  * Make
 
-### Quick Start
+### Local Development Workflow
 
 ```bash
-# Set up development environment (installs dependencies and tools)
+# 1. Clone the repository
+git clone https://github.com/dminnear-rh/patternizer.git
+cd patternizer
+
+# 2. Set up the development environment (installs tools)
 make dev-setup
 
-# Show all available targets
-make help
-```
+# 3. Make your changes...
 
-### Common Development Tasks
-
-```bash
-# Build the CLI
-make build
-
-# Run all tests (unit + integration)
-make test
-
-# Run only unit tests
-make test-unit
-
-# Run only integration tests
-make test-integration
-
-# Build container image locally (as `patternizer:local`)
-make local-container-build
-
-# Run full CI pipeline locally
+# 4. Run the full CI suite locally before committing
 make ci
-
-# Quick feedback loop (format check, vet, build, unit tests)
-make check
 ```
 
-### Code Quality
+### Common Makefile Targets
 
-The project uses comprehensive linting and formatting:
+The `Makefile` is the single source of truth for all development and CI tasks.
 
-```bash
-# Run all linting checks (gofmt, go vet, golangci-lint)
-make lint
+  * `make help`: Show all available targets.
+  * `make check`: Quick feedback loop (format, vet, build, unit tests).
+  * `make build`: Build the `patternizer` binary.
+  * `make test`: Run all tests (unit and integration).
+  * `make test-unit`: Run unit tests only.
+  * `make test-integration`: Run integration tests only.
+  * `make lint`: Run all code quality checks.
+  * `make local-container-build`: Build the container image locally.
 
-# Format code
-make fmt
+### Testing Strategy
 
-# Run individual lint checks
-make lint-fmt     # gofmt check
-make lint-vet     # go vet
-make lint-golangci # golangci-lint
-```
+Patternizer has a comprehensive test suite to ensure stability and correctness.
 
----
+  * **Unit Tests:** Located alongside the code they test (e.g., `src/internal/helm/helm_test.go`), these tests cover individual functions and packages in isolation. They validate Helm chart detection, Git URL parsing, and YAML processing logic.
+  * **Integration Tests:** The integration test suite (`test/integration_test.sh`) validates the end-to-end CLI workflow against a real Git repository. Key scenarios include:
+    1.  **Basic Init:** Validates default file generation without secrets.
+    2.  **Init with Secrets:** Ensures secrets-related applications and files are correctly added.
+    3.  **Configuration Preservation:** Verifies that existing custom values are preserved when the tool is re-run.
+    4.  **Sequential Execution:** Tests running `init` and then `init --with-secrets` to ensure a clean upgrade.
 
-## Testing
+### Architecture
 
-### Unit Tests
+The CLI is organized into focused packages following Go best practices, with a clean separation of concerns between command-line logic (`cmd`), core business logic (`internal`), and file operations (`fileutils`). This modular design makes the codebase maintainable, testable, and extensible.
 
-The project includes comprehensive unit tests across multiple packages:
+### CI/CD Pipeline
 
-**Main Package Tests (`src/main_test.go`):**
-- `TestGetResourcePath()` - Resource path resolution with and without environment variables
-- `TestNewDefaultValuesGlobal()` - Global configuration default values validation
-- `TestNewDefaultValuesClusterGroup()` - Cluster group configuration generation and secrets integration
+The GitHub Actions pipeline (`.github/workflows/ci.yaml`) runs on every push and pull request. It uses the same `Makefile` targets that developers use locally, ensuring perfect consistency between local and CI environments.
 
-**Helm Package Tests (`src/internal/helm/helm_test.go`):**
-- `TestFindTopLevelCharts()` - Helm chart discovery functionality with comprehensive test scenarios:
-  - Correctly identifies valid top-level charts (chart1, chart2)
-  - Properly skips sub-charts in `charts/` directories
-  - Ignores hidden directories (`.hidden-chart`) and invalid chart structures
-  - Handles edge cases: missing Chart.yaml, missing values.yaml, missing templates directory, templates as file
-- `TestIsHelmChart()` - Chart structure validation:
-  - Validates required files: Chart.yaml, values.yaml, templates/ directory
-  - Tests various invalid configurations and edge cases
+### How to Contribute
 
-**Pattern Package Tests (`src/internal/pattern/pattern_test.go`):**
-- `TestExtractPatternNameFromURL()` - Git URL parsing for multiple formats:
-  - SSH URLs: `git@github.com:user/repo.git`, `git@gitlab.com:group/subgroup/repo.git`
-  - HTTPS/HTTP URLs: `https://github.com/user/repo.git`, `http://github.com/user/repo`
-  - Error handling for invalid URLs and unsupported protocols
-- `TestProcessGlobalValuesPreservesFields()` - Field preservation during YAML processing:
-  - Preserves existing custom fields at all nesting levels
-  - Maintains custom arrays, nested objects, and primitive values
-  - Intelligently merges new defaults with existing configurations
-- `TestProcessClusterGroupValuesPreservesFields()` - Cluster group values field preservation:
-  - Preserves custom applications, subscriptions, and cluster-level fields
-  - Adds new applications while maintaining existing ones
-  - Maintains custom fields within applications and subscriptions
-- `TestProcessGlobalValuesWithNewFile()` - New file creation with proper defaults
-- `TestProcessGlobalValuesWithSecrets()` - Validates secrets configuration:
-  - Tests `ProcessGlobalValues` with `withSecrets=true`
-  - Verifies `global.secretLoader.disabled: false` is set correctly
-  - Ensures secrets-enabled configuration is properly generated
-
-### Integration Tests
-
-The integration test suite (`test/integration_test.sh`) validates the complete CLI workflow with four comprehensive test scenarios:
-
-**Test 1: Basic Initialization (Without Secrets)**
-- Clones the [trivial-pattern](https://github.com/dminnear-rh/trivial-pattern) repository
-- Runs `patternizer init` and validates generated files
-- Verifies `values-global.yaml` contains `global.secretLoader.disabled: true`
-- Validates `values-prod.yaml` content using YAML normalization
-- Ensures `pattern.sh` is created and executable
-- Validates `Makefile` (include-based) and `Makefile-pattern` are created
-
-**Test 2: Initialization with Secrets**
-- Tests `patternizer init --with-secrets` functionality
-- Verifies `values-global.yaml` contains `global.secretLoader.disabled: false`
-- Validates secrets-specific applications (vault, golang-external-secrets) are added
-- Verifies additional namespaces and `values-secret.yaml.template` are created
-- Ensures `pattern.sh` and both Makefile files are properly generated
-
-**Test 3: Custom Pattern and Cluster Group Names**
-- Tests field preservation and intelligent merging of existing configurations
-- Pre-populates custom `values-global.yaml` with renamed pattern and cluster group
-- Verifies custom names are preserved while adding missing default configurations
-- Validates custom cluster group file generation (e.g., `values-renamed-cluster-group.yaml`)
-- Ensures `global.secretLoader.disabled: false` is set correctly with `--with-secrets`
-
-**Test 4: Sequential Execution**
-- Tests running `patternizer init` followed by `patternizer init --with-secrets`
-- Validates that the second command properly upgrades the configuration
-- Ensures `global.secretLoader.disabled` transitions from `true` to `false`
-- Verifies final state matches direct `--with-secrets` execution
-
-Run integration tests locally:
-```bash
-# Run integration tests (automatically builds binary first)
-make test-integration
-
-# Or run all tests (unit + integration)
-make test
-```
-
----
-
-## CI/CD Pipeline
-
-The project uses a comprehensive CI pipeline with three stages that leverage the Makefile for consistency:
-
-1. **Lint & Format**: `make lint` - Code quality checks with `gofmt`, `go vet`, and `golangci-lint`
-2. **Build & Test**: `make build`, `make test-unit`, `make test-coverage`, `make test-integration`
-3. **Container Build**: Multi-stage container build and push to Quay.io
-
-All code must pass linting and tests before being merged or deployed.
-
-The CI pipeline uses the same Makefile targets that developers use locally, ensuring perfect consistency between local development and CI environments. You can run the same checks locally with `make ci`.
-
----
-
-## Architecture
-
-The CLI is organized into focused packages following Go best practices:
-
-**Main Package (`src/`):**
-- `main.go` - Application entry point
-
-**Command Package (`src/cmd/`):**
-- `root.go` - Cobra CLI setup and root command
-- `init.go` - Initialization command logic and orchestration
-
-**Internal Packages (`src/internal/`):**
-- `fileutils/` - File operations, resource management, and path resolution
-- `helm/` - Helm chart discovery and validation
-- `pattern/` - Core pattern processing, Git operations, and URL parsing
-- `types/` - YAML structure definitions and default value constructors
-
-**Key Design Principles:**
-- **Separation of Concerns**: Each package has a single, well-defined responsibility
-- **Testability**: All packages are thoroughly unit tested with comprehensive coverage
-- **Field Preservation**: YAML processing preserves all user-defined custom fields
-- **Error Handling**: Comprehensive error handling with descriptive messages
-- **Modularity**: Clean interfaces between packages for maintainability
-
-This modular design makes the codebase maintainable, testable, and extensible.
-
----
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run the development workflow:
-   ```bash
-   make dev-setup  # Set up development environment
-   make ci         # Lint/build/test your changes in one step
-   ```
-5. Submit a pull request
-
-All contributions must pass the CI pipeline including linting, formatting, and comprehensive testing.
-
-### Development Workflow
-
-For the best development experience:
-```bash
-# Initial setup
-make dev-setup
-
-# During development (fast feedback)
-make check
-
-# Before committing
-make ci  # Runs the full CI pipeline locally
-```
+1.  Fork the repository.
+2.  Create a feature branch for your changes.
+3.  Make your changes and ensure they pass the local CI check (`make ci`).
+4.  Submit a pull request.
