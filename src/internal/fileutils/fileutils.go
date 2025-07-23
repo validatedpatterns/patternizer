@@ -1,13 +1,10 @@
 package fileutils
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strings"
 )
 
 // CopyFile copies a file from src to dst. If dst already exists, it will be overwritten.
@@ -43,102 +40,6 @@ func CopyFile(src, dst string) error {
 	err = os.Chmod(dst, sourceFileStat.Mode())
 	if err != nil {
 		return err
-	}
-
-	return nil
-}
-
-// ModifyPatternShScript modifies the pattern.sh script to set USE_SECRETS to the desired value.
-func ModifyPatternShScript(patternShPath string, useSecrets bool) error {
-	file, err := os.Open(patternShPath)
-	if err != nil {
-		return err
-	}
-
-	var lines []string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	file.Close()
-
-	if err := scanner.Err(); err != nil {
-		return err
-	}
-
-	// Regex to match the USE_SECRETS line
-	regex := regexp.MustCompile(`^\s*:\s*"\$\{USE_SECRETS:=(.+)\}"`)
-
-	for i, line := range lines {
-		if matches := regex.FindStringSubmatch(line); matches != nil {
-			if useSecrets {
-				lines[i] = strings.Replace(line, matches[1], "true", 1)
-			} else {
-				lines[i] = strings.Replace(line, matches[1], "false", 1)
-			}
-			break
-		}
-	}
-
-	output, err := os.Create(patternShPath)
-	if err != nil {
-		return err
-	}
-	defer output.Close()
-
-	for _, line := range lines {
-		_, err := output.WriteString(line + "\n")
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// ModifyMakefileScript modifies the Makefile to set USE_SECRETS to the desired value.
-func ModifyMakefileScript(makefilePath string, useSecrets bool) error {
-	file, err := os.Open(makefilePath)
-	if err != nil {
-		return err
-	}
-
-	var lines []string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	file.Close()
-
-	if err := scanner.Err(); err != nil {
-		return err
-	}
-
-	// Regex to match the USE_SECRETS line in Makefile format
-	regex := regexp.MustCompile(`^USE_SECRETS\s*\?=\s*(.+)$`)
-
-	for i, line := range lines {
-		if matches := regex.FindStringSubmatch(line); matches != nil {
-			if useSecrets {
-				lines[i] = "USE_SECRETS ?= true"
-			} else {
-				lines[i] = "USE_SECRETS ?= false"
-			}
-			break
-		}
-	}
-
-	output, err := os.Create(makefilePath)
-	if err != nil {
-		return err
-	}
-	defer output.Close()
-
-	for _, line := range lines {
-		_, err := output.WriteString(line + "\n")
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
