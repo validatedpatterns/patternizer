@@ -121,33 +121,75 @@ except Exception as e:
     fi
 }
 
+# Function to print test section headers
+test_header() {
+    echo -e "${YELLOW}$1${NC}"
+}
+
+# Function to print test pass messages
+test_pass() {
+    echo -e "${GREEN}PASS: $1${NC}"
+}
+
+# Function to print test fail messages and exit
+test_fail() {
+    echo -e "${RED}FAIL: $1${NC}"
+    exit 1
+}
+
+# Function to compare two files exactly with diff, showing differences on failure
+compare_files() {
+    local expected_file="$1"
+    local actual_file="$2"
+    local description="$3"
+
+    if [ ! -f "$actual_file" ]; then
+        test_fail "$description - file not created: $actual_file"
+    fi
+
+    if [ ! -f "$expected_file" ]; then
+        test_fail "$description - expected file not found: $expected_file"
+    fi
+
+    if diff "$expected_file" "$actual_file" > /dev/null; then
+        test_pass "$description"
+        return 0
+    else
+        echo -e "${RED}FAIL: $description${NC}"
+        echo "Expected file: $expected_file"
+        echo "Actual file: $actual_file"
+        echo "Diff:"
+        diff "$expected_file" "$actual_file" || true
+        exit 1
+    fi
+}
+
 # Function to check file exists
 check_file_exists() {
     local file="$1"
     local description="$2"
 
     if [ -f "$file" ]; then
-        echo -e "${GREEN}PASS: $description${NC}"
+        test_pass "$description"
         return 0
     else
-        echo -e "${RED}FAIL: $description - file not found: $file${NC}"
-        return 1
+        test_fail "$description - file not found: $file"
     fi
 }
 
 #
 # Test 1: Basic initialization (without secrets)
 #
-echo -e "${YELLOW}=== Test 1: Basic initialization (without secrets) ===${NC}"
+test_header "=== Test 1: Basic initialization (without secrets) ==="
 
-echo -e "${YELLOW}Cloning test repository...${NC}"
+test_header "Cloning test repository..."
 git clone "$TEST_REPO_URL" "$TEST_DIR"
 cd "$TEST_DIR"
 
-echo -e "${YELLOW}Running patternizer init...${NC}"
+test_header "Running patternizer init..."
 "$PATTERNIZER_BINARY" init
 
-echo -e "${YELLOW}Running verification tests...${NC}"
+test_header "Running verification tests..."
 
 # Test 1.1: Check values-global.yaml
 compare_yaml "$EXPECTED_VALUES_GLOBAL" "values-global.yaml" "values-global.yaml content"
@@ -164,37 +206,27 @@ else
 fi
 
 # Test 1.4: Check Makefile has exact expected content
-if diff "$EXPECTED_MAKEFILE" "Makefile" > /dev/null; then
-    echo -e "${GREEN}PASS: Makefile has expected content (init without secrets)${NC}"
-else
-    echo -e "${RED}FAIL: Makefile content doesn't match expected (init without secrets)${NC}"
-    exit 1
-fi
+compare_files "$EXPECTED_MAKEFILE" "Makefile" "Makefile has expected content (init without secrets)"
 
 # Test 1.5: Check Makefile-pattern has exact expected content
-if diff "$EXPECTED_MAKEFILE_PATTERN" "Makefile-pattern" > /dev/null; then
-    echo -e "${GREEN}PASS: Makefile-pattern has expected content (init without secrets)${NC}"
-else
-    echo -e "${RED}FAIL: Makefile-pattern content doesn't match expected (init without secrets)${NC}"
-    exit 1
-fi
+compare_files "$EXPECTED_MAKEFILE_PATTERN" "Makefile-pattern" "Makefile-pattern has expected content (init without secrets)"
 
-echo -e "${GREEN}=== Test 1: Basic initialization PASSED ===${NC}"
+test_pass "=== Test 1: Basic initialization PASSED ==="
 
 #
 # Test 2: Initialization with secrets
 #
-echo -e "${YELLOW}=== Test 2: Initialization with secrets ===${NC}"
+test_header "=== Test 2: Initialization with secrets ==="
 
 cd "$REPO_ROOT"  # Go back to repo root
-echo -e "${YELLOW}Cloning test repository for secrets test...${NC}"
+test_header "Cloning test repository for secrets test..."
 git clone "$TEST_REPO_URL" "$TEST_DIR_SECRETS"
 cd "$TEST_DIR_SECRETS"
 
-echo -e "${YELLOW}Running patternizer init --with-secrets...${NC}"
+test_header "Running patternizer init --with-secrets..."
 "$PATTERNIZER_BINARY" init --with-secrets
 
-echo -e "${YELLOW}Running verification tests for secrets...${NC}"
+test_header "Running verification tests for secrets..."
 
 # Test 2.1: Check values-global.yaml (secretLoader.disabled should be false with secrets)
 compare_yaml "$EXPECTED_VALUES_GLOBAL_WITH_SECRETS" "values-global.yaml" "values-global.yaml content (with secrets)"
@@ -211,48 +243,33 @@ else
 fi
 
 # Test 2.4: Check values-secret.yaml.template has exact expected content
-if diff "$EXPECTED_VALUES_SECRET_TEMPLATE" "values-secret.yaml.template" > /dev/null; then
-    echo -e "${GREEN}PASS: values-secret.yaml.template has expected content${NC}"
-else
-    echo -e "${RED}FAIL: values-secret.yaml.template content doesn't match expected${NC}"
-    exit 1
-fi
+compare_files "$EXPECTED_VALUES_SECRET_TEMPLATE" "values-secret.yaml.template" "values-secret.yaml.template has expected content"
 
 # Test 2.5: Check Makefile has exact expected content
-if diff "$EXPECTED_MAKEFILE" "Makefile" > /dev/null; then
-    echo -e "${GREEN}PASS: Makefile has expected content (init with secrets)${NC}"
-else
-    echo -e "${RED}FAIL: Makefile content doesn't match expected (init with secrets)${NC}"
-    exit 1
-fi
+compare_files "$EXPECTED_MAKEFILE" "Makefile" "Makefile has expected content (init with secrets)"
 
 # Test 2.6: Check Makefile-pattern has exact expected content
-if diff "$EXPECTED_MAKEFILE_PATTERN" "Makefile-pattern" > /dev/null; then
-    echo -e "${GREEN}PASS: Makefile-pattern has expected content (init with secrets)${NC}"
-else
-    echo -e "${RED}FAIL: Makefile-pattern content doesn't match expected (init with secrets)${NC}"
-    exit 1
-fi
+compare_files "$EXPECTED_MAKEFILE_PATTERN" "Makefile-pattern" "Makefile-pattern has expected content (init with secrets)"
 
-echo -e "${GREEN}=== Test 2: Initialization with secrets PASSED ===${NC}"
+test_pass "=== Test 2: Initialization with secrets PASSED ==="
 
 #
 # Test 3: Custom pattern and cluster group names (merging test with secrets)
 #
-echo -e "${YELLOW}=== Test 3: Custom pattern and cluster group names (with secrets) ===${NC}"
+test_header "=== Test 3: Custom pattern and cluster group names (with secrets) ==="
 
 cd "$REPO_ROOT"  # Go back to repo root
-echo -e "${YELLOW}Cloning test repository for custom names test...${NC}"
+test_header "Cloning test repository for custom names test..."
 git clone "$TEST_REPO_URL" "$TEST_DIR_CUSTOM"
 cd "$TEST_DIR_CUSTOM"
 
-echo -e "${YELLOW}Setting up initial values-global.yaml with custom names...${NC}"
+test_header "Setting up initial values-global.yaml with custom names..."
 cp "$INITIAL_VALUES_GLOBAL_CUSTOM" "values-global.yaml"
 
-echo -e "${YELLOW}Running patternizer init --with-secrets (should preserve custom names)...${NC}"
+test_header "Running patternizer init --with-secrets (should preserve custom names)..."
 "$PATTERNIZER_BINARY" init --with-secrets
 
-echo -e "${YELLOW}Running verification tests for custom names...${NC}"
+test_header "Running verification tests for custom names..."
 
 # Test 3.1: Check values-global.yaml preserves custom names and adds multiSourceConfig
 compare_yaml "$EXPECTED_VALUES_GLOBAL_CUSTOM" "values-global.yaml" "values-global.yaml content (custom names)"
@@ -269,49 +286,34 @@ else
 fi
 
 # Test 3.4: Check values-secret.yaml.template has exact expected content
-if diff "$EXPECTED_VALUES_SECRET_TEMPLATE" "values-secret.yaml.template" > /dev/null; then
-    echo -e "${GREEN}PASS: values-secret.yaml.template has expected content (custom names)${NC}"
-else
-    echo -e "${RED}FAIL: values-secret.yaml.template content doesn't match expected (custom names)${NC}"
-    exit 1
-fi
+compare_files "$EXPECTED_VALUES_SECRET_TEMPLATE" "values-secret.yaml.template" "values-secret.yaml.template has expected content (custom names)"
 
 # Test 3.5: Check Makefile has exact expected content
-if diff "$EXPECTED_MAKEFILE" "Makefile" > /dev/null; then
-    echo -e "${GREEN}PASS: Makefile has expected content (custom names with secrets)${NC}"
-else
-    echo -e "${RED}FAIL: Makefile content doesn't match expected (custom names with secrets)${NC}"
-    exit 1
-fi
+compare_files "$EXPECTED_MAKEFILE" "Makefile" "Makefile has expected content (custom names with secrets)"
 
 # Test 3.6: Check Makefile-pattern has exact expected content
-if diff "$EXPECTED_MAKEFILE_PATTERN" "Makefile-pattern" > /dev/null; then
-    echo -e "${GREEN}PASS: Makefile-pattern has expected content (custom names with secrets)${NC}"
-else
-    echo -e "${RED}FAIL: Makefile-pattern content doesn't match expected (custom names with secrets)${NC}"
-    exit 1
-fi
+compare_files "$EXPECTED_MAKEFILE_PATTERN" "Makefile-pattern" "Makefile-pattern has expected content (custom names with secrets)"
 
-echo -e "${GREEN}=== Test 3: Custom pattern and cluster group names (with secrets) PASSED ===${NC}"
+test_pass "=== Test 3: Custom pattern and cluster group names (with secrets) PASSED ==="
 
 #
 # Test 4: Sequential execution (init followed by init --with-secrets)
 #
-echo -e "${YELLOW}=== Test 4: Sequential execution (init + init --with-secrets) ===${NC}"
+test_header "=== Test 4: Sequential execution (init + init --with-secrets) ==="
 
 cd "$REPO_ROOT"  # Go back to repo root
 
-echo -e "${YELLOW}Cloning test repository for sequential test...${NC}"
+test_header "Cloning test repository for sequential test..."
 git clone "$TEST_REPO_URL" "$TEST_DIR_SEQUENTIAL"
 cd "$TEST_DIR_SEQUENTIAL"
 
-echo -e "${YELLOW}Running patternizer init (first)...${NC}"
+test_header "Running patternizer init (first)..."
 "$PATTERNIZER_BINARY" init
 
-echo -e "${YELLOW}Running patternizer init --with-secrets (second)...${NC}"
+test_header "Running patternizer init --with-secrets (second)..."
 "$PATTERNIZER_BINARY" init --with-secrets
 
-echo -e "${YELLOW}Running verification tests for sequential execution...${NC}"
+test_header "Running verification tests for sequential execution..."
 
 # Test 4.1: Check values-global.yaml (should have secretLoader.disabled=false after --with-secrets)
 compare_yaml "$EXPECTED_VALUES_GLOBAL_WITH_SECRETS" "values-global.yaml" "values-global.yaml content (sequential)"
@@ -328,43 +330,28 @@ else
 fi
 
 # Test 4.4: Check values-secret.yaml.template has exact expected content
-if diff "$EXPECTED_VALUES_SECRET_TEMPLATE" "values-secret.yaml.template" > /dev/null; then
-    echo -e "${GREEN}PASS: values-secret.yaml.template has expected content (sequential)${NC}"
-else
-    echo -e "${RED}FAIL: values-secret.yaml.template content doesn't match expected (sequential)${NC}"
-    exit 1
-fi
+compare_files "$EXPECTED_VALUES_SECRET_TEMPLATE" "values-secret.yaml.template" "values-secret.yaml.template has expected content (sequential)"
 
 # Test 4.5: Check Makefile has exact expected content
-if diff "$EXPECTED_MAKEFILE" "Makefile" > /dev/null; then
-    echo -e "${GREEN}PASS: Makefile has expected content (sequential execution)${NC}"
-else
-    echo -e "${RED}FAIL: Makefile content doesn't match expected (sequential execution)${NC}"
-    exit 1
-fi
+compare_files "$EXPECTED_MAKEFILE" "Makefile" "Makefile has expected content (sequential execution)"
 
 # Test 4.6: Check Makefile-pattern has exact expected content
-if diff "$EXPECTED_MAKEFILE_PATTERN" "Makefile-pattern" > /dev/null; then
-    echo -e "${GREEN}PASS: Makefile-pattern has expected content (sequential execution)${NC}"
-else
-    echo -e "${RED}FAIL: Makefile-pattern content doesn't match expected (sequential execution)${NC}"
-    exit 1
-fi
+compare_files "$EXPECTED_MAKEFILE_PATTERN" "Makefile-pattern" "Makefile-pattern has expected content (sequential execution)"
 
-echo -e "${GREEN}=== Test 4: Sequential execution PASSED ===${NC}"
+test_pass "=== Test 4: Sequential execution PASSED ==="
 
 #
 # Test 5: File overwrite behavior with existing custom files
 #
-echo -e "${YELLOW}=== Test 5: File overwrite behavior with existing custom files ===${NC}"
+test_header "=== Test 5: File overwrite behavior with existing custom files ==="
 
 cd "$REPO_ROOT"  # Go back to repo root
 
-echo -e "${YELLOW}Cloning test repository for overwrite behavior test...${NC}"
+test_header "Cloning test repository for overwrite behavior test..."
 git clone "$TEST_REPO_URL" "$TEST_DIR_OVERWRITE"
 cd "$TEST_DIR_OVERWRITE"
 
-echo -e "${YELLOW}Setting up existing custom files...${NC}"
+test_header "Setting up existing custom files..."
 
 # Copy initial files to set up the test scenario
 cp "$INITIAL_VALUES_GLOBAL_OVERWRITE" "values-global.yaml"
@@ -377,10 +364,10 @@ cp "$INITIAL_VALUES_SECRET_TEMPLATE_OVERWRITE" "values-secret.yaml.template"
 # Make pattern.sh executable to match real scenarios
 chmod +x "pattern.sh"
 
-echo -e "${YELLOW}Running patternizer init --with-secrets...${NC}"
+test_header "Running patternizer init --with-secrets..."
 "$PATTERNIZER_BINARY" init --with-secrets
 
-echo -e "${YELLOW}Verifying file overwrite behavior...${NC}"
+test_header "Verifying file overwrite behavior..."
 
 # Test 5.1: values-global.yaml should preserve custom fields and merge with defaults
 compare_yaml "$EXPECTED_VALUES_GLOBAL_OVERWRITE" "values-global.yaml" "values-global.yaml content (preserves custom fields with --with-secrets)"
@@ -389,71 +376,38 @@ compare_yaml "$EXPECTED_VALUES_GLOBAL_OVERWRITE" "values-global.yaml" "values-gl
 compare_yaml "$EXPECTED_VALUES_CUSTOM_CLUSTER_OVERWRITE" "values-custom-cluster.yaml" "values-custom-cluster.yaml content (preserves custom fields)"
 
 # Test 5.3: Makefile should NOT be overwritten
-if diff "$INITIAL_MAKEFILE_OVERWRITE" "Makefile" > /dev/null; then
-    echo -e "${GREEN}PASS: Makefile was not overwritten (content preserved)${NC}"
-else
-    echo -e "${RED}FAIL: Makefile was overwritten but should have been preserved${NC}"
-    echo "Expected (initial):"
-    cat "$INITIAL_MAKEFILE_OVERWRITE"
-    echo ""
-    echo "Actual:"
-    cat "Makefile"
-    echo ""
-    exit 1
-fi
+compare_files "$INITIAL_MAKEFILE_OVERWRITE" "Makefile" "Makefile was not overwritten (content preserved)"
 
 # Test 5.4: Makefile-pattern SHOULD be overwritten with exact expected content
-if diff "$EXPECTED_MAKEFILE_PATTERN" "Makefile-pattern" > /dev/null; then
-    echo -e "${GREEN}PASS: Makefile-pattern was overwritten with correct content${NC}"
-else
-    echo -e "${RED}FAIL: Makefile-pattern doesn't have expected content after overwrite${NC}"
-    exit 1
-fi
+compare_files "$EXPECTED_MAKEFILE_PATTERN" "Makefile-pattern" "Makefile-pattern was overwritten with correct content"
 
 # Test 5.5: pattern.sh SHOULD be overwritten with exact expected content and be executable
-if diff "$EXPECTED_PATTERN_SH" "pattern.sh" > /dev/null; then
-    echo -e "${GREEN}PASS: pattern.sh was overwritten with correct content${NC}"
-else
-    echo -e "${RED}FAIL: pattern.sh doesn't have expected content after overwrite${NC}"
-    exit 1
-fi
+compare_files "$EXPECTED_PATTERN_SH" "pattern.sh" "pattern.sh was overwritten with correct content"
 
 # Verify it's executable
 if [ -x "pattern.sh" ]; then
-    echo -e "${GREEN}PASS: pattern.sh is executable${NC}"
+    test_pass "pattern.sh is executable"
 else
-    echo -e "${RED}FAIL: pattern.sh is not executable${NC}"
-    exit 1
+    test_fail "pattern.sh is not executable"
 fi
 
 # Test 5.6: values-secret.yaml.template should NOT be overwritten
-if diff "$INITIAL_VALUES_SECRET_TEMPLATE_OVERWRITE" "values-secret.yaml.template" > /dev/null; then
-    echo -e "${GREEN}PASS: values-secret.yaml.template was not overwritten (content preserved)${NC}"
-else
-    echo -e "${RED}FAIL: values-secret.yaml.template was overwritten but should have been preserved${NC}"
-    echo "Expected (initial):"
-    cat "$INITIAL_VALUES_SECRET_TEMPLATE_OVERWRITE"
-    echo ""
-    echo "Actual:"
-    cat "values-secret.yaml.template"
-    echo ""
-    exit 1
-fi
+compare_files "$INITIAL_VALUES_SECRET_TEMPLATE_OVERWRITE" "values-secret.yaml.template" "values-secret.yaml.template was not overwritten (content preserved)"
 
-echo -e "${GREEN}=== Test 5: File overwrite behavior PASSED ===${NC}"
+test_pass "=== Test 5: File overwrite behavior PASSED ==="
 
 #
 # Test 6: Mixed file overwrite behavior (some files exist, some don't)
 #
-echo -e "${YELLOW}=== Test 6: Mixed file overwrite behavior ===${NC}"
+test_header "=== Test 6: Mixed file overwrite behavior ==="
 
 cd "$REPO_ROOT"  # Go back to repo root
 
-echo -e "${YELLOW}Cloning test repository for mixed scenario...${NC}"
+test_header "Cloning test repository for mixed scenario..."
 git clone "$TEST_REPO_URL" "$TEST_DIR_MIXED"
 cd "$TEST_DIR_MIXED"
 
-echo -e "${YELLOW}Setting up partial existing files...${NC}"
+test_header "Setting up partial existing files..."
 
 # Only create some files to test mixed scenarios
 
@@ -464,55 +418,34 @@ cp "$INITIAL_VALUES_SECRET_TEMPLATE_OVERWRITE" "values-secret.yaml.template"
 # Don't create values-global.yaml, values-prod.yaml (should be created)
 # Don't create Makefile-pattern, pattern.sh (should be created/overwritten)
 
-echo -e "${YELLOW}Running patternizer init --with-secrets on mixed repository...${NC}"
+test_header "Running patternizer init --with-secrets on mixed repository..."
 "$PATTERNIZER_BINARY" init --with-secrets
 
-echo -e "${YELLOW}Verifying mixed overwrite behavior...${NC}"
+test_header "Verifying mixed overwrite behavior..."
 
 # Test 6.1: Files that should be created with exact expected content
 check_file_exists "values-global.yaml" "values-global.yaml created when missing"
 check_file_exists "values-prod.yaml" "values-prod.yaml created when missing"
 
-if diff "$EXPECTED_MAKEFILE_PATTERN" "Makefile-pattern" > /dev/null; then
-    echo -e "${GREEN}PASS: Makefile-pattern created with correct content${NC}"
-else
-    echo -e "${RED}FAIL: Makefile-pattern doesn't have expected content${NC}"
-    exit 1
-fi
+compare_files "$EXPECTED_MAKEFILE_PATTERN" "Makefile-pattern" "Makefile-pattern created with correct content"
 
-if diff "$EXPECTED_PATTERN_SH" "pattern.sh" > /dev/null; then
-    echo -e "${GREEN}PASS: pattern.sh created with correct content${NC}"
-else
-    echo -e "${RED}FAIL: pattern.sh doesn't have expected content${NC}"
-    exit 1
-fi
+compare_files "$EXPECTED_PATTERN_SH" "pattern.sh" "pattern.sh created with correct content"
 
 # Test 6.2: Files that should be preserved
-if diff "$INITIAL_MAKEFILE_OVERWRITE" "Makefile" > /dev/null; then
-    echo -e "${GREEN}PASS: Existing Makefile preserved in mixed scenario${NC}"
-else
-    echo -e "${RED}FAIL: Existing Makefile was changed in mixed scenario${NC}"
-    exit 1
-fi
+compare_files "$INITIAL_MAKEFILE_OVERWRITE" "Makefile" "Existing Makefile preserved in mixed scenario"
 
-if diff "$INITIAL_VALUES_SECRET_TEMPLATE_OVERWRITE" "values-secret.yaml.template" > /dev/null; then
-    echo -e "${GREEN}PASS: Existing values-secret.yaml.template preserved in mixed scenario${NC}"
-else
-    echo -e "${RED}FAIL: Existing values-secret.yaml.template was changed in mixed scenario${NC}"
-    exit 1
-fi
+compare_files "$INITIAL_VALUES_SECRET_TEMPLATE_OVERWRITE" "values-secret.yaml.template" "Existing values-secret.yaml.template preserved in mixed scenario"
 
 # Test 6.3: Verify pattern.sh is executable
 if [ -x "pattern.sh" ]; then
-    echo -e "${GREEN}PASS: pattern.sh is executable in mixed scenario${NC}"
+    test_pass "pattern.sh is executable in mixed scenario"
 else
-    echo -e "${RED}FAIL: pattern.sh is not executable in mixed scenario${NC}"
-    exit 1
+    test_fail "pattern.sh is not executable in mixed scenario"
 fi
 
-echo -e "${GREEN}=== Test 6: Mixed file overwrite behavior PASSED ===${NC}"
+test_pass "=== Test 6: Mixed file overwrite behavior PASSED ==="
 
-echo -e "${GREEN}All integration tests passed!${NC}"
+test_pass "All integration tests passed!"
 
 # Clean up
 cd "$REPO_ROOT"
