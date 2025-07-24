@@ -1,7 +1,7 @@
 # Patternizer
 
-[![Quay Repository](https://img.shields.io/badge/Quay.io-patternizer-blue?logo=quay)](https://quay.io/repository/dminnear/patternizer)
-[![CI Pipeline](https://github.com/dminnear-rh/patternizer/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/dminnear-rh/patternizer/actions/workflows/ci.yaml)
+[![Quay Repository](https://img.shields.io/badge/Quay.io-patternizer-blue?logo=quay)](https://quay.io/repository/hybridcloudpatterns/patternizer)
+[![CI Pipeline](https://github.com/validatedpatterns/patternizer/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/validatedpatterns/patternizer/actions/workflows/ci.yaml)
 
 **Patternizer** is a command-line tool that bootstraps a Git repository containing Helm charts into a ready-to-use Validated Pattern. It automatically generates the necessary scaffolding, configuration files, and utility scripts, so you can get your pattern up and running in minutes.
 
@@ -47,7 +47,7 @@ Navigate to your repository's root directory and run the initialization command:
 
 ```bash
 # In the root of your pattern-repo
-podman run --pull=always --rm -it -v .:/repo:z quay.io/dminnear/patternizer init
+podman run -v "$PWD:/repo:z" quay.io/hybridcloudpatterns/patternizer init
 ```
 
 This single command will generate all the necessary files to turn your repository into a Validated Pattern.
@@ -65,7 +65,7 @@ This single command will generate all the necessary files to turn your repositor
 2.  **Initialize the pattern using Patternizer:**
 
     ```bash
-    podman run --pull=always --rm -it -v .:/repo:z quay.io/dminnear/patternizer init
+    podman run -v "$PWD:/repo:z" quay.io/hybridcloudpatterns/patternizer init
     ```
 
 3.  **Review, commit, and push the generated files:**
@@ -87,18 +87,18 @@ This single command will generate all the necessary files to turn your repositor
 
 ### Container Usage (Recommended)
 
-Using the prebuilt container is the easiest way to run Patternizer, as it requires no local installation. The `-v .:/repo:z` flag mounts your current directory into the container's `/repo` workspace.
+Using the prebuilt container is the easiest way to run Patternizer, as it requires no local installation. The `-v "$PWD:/repo:z"` flag mounts your current directory into the container's `/repo` workspace.
 
 #### **Initialize without secrets:**
 
 ```bash
-podman run --pull=always --rm -it -v .:/repo:z quay.io/dminnear/patternizer init
+podman run -v "$PWD:/repo:z" quay.io/hybridcloudpatterns/patternizer init
 ```
 
 #### **Initialize with secrets support:**
 
 ```bash
-podman run --pull=always --rm -it -v .:/repo:z quay.io/dminnear/patternizer init --with-secrets
+podman run -v "$PWD:/repo:z" quay.io/hybridcloudpatterns/patternizer init --with-secrets
 ```
 
 ### Understanding Secrets Management
