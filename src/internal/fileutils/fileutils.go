@@ -51,18 +51,10 @@ func HandleSecretsSetup(resourcesDir, repoRoot string) (err error) {
 	secretsTemplateSrc := filepath.Join(resourcesDir, "values-secret.yaml.template")
 	secretsTemplateDst := filepath.Join(repoRoot, "values-secret.yaml.template")
 
-	// Check if the secrets template already exists
-	if _, err := os.Stat(secretsTemplateDst); err == nil {
-		// File already exists, don't overwrite it
-		return nil
-	} else if !os.IsNotExist(err) {
-		// Some other error occurred while checking if file exists
-		return fmt.Errorf("error checking if secrets template exists: %w", err)
-	}
-
-	// File doesn't exist, so copy it
-	if err = CopyFile(secretsTemplateSrc, secretsTemplateDst); err != nil {
-		return fmt.Errorf("error copying secrets template: %w", err)
+	if _, err := os.Stat(secretsTemplateDst); os.IsNotExist(err) {
+		if err = CopyFile(secretsTemplateSrc, secretsTemplateDst); err != nil {
+			return fmt.Errorf("error copying secrets template: %w", err)
+		}
 	}
 
 	return nil
