@@ -11,7 +11,7 @@ on:
       - main
 
 env:
-  IMAGE_NAME: quay.io/dminnear/patternizer
+  IMAGE_NAME: quay.io/hybridcloudpatterns/patternizer
   GO_VERSION: '1.24'
 
 jobs:
