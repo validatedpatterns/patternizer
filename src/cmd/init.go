@@ -59,7 +59,7 @@ func runInit(withSecrets bool) error {
 	makefileDst := filepath.Join(repoRoot, "Makefile")
 	if _, err := os.Stat(makefileDst); os.IsNotExist(err) {
 		if err := fileutils.CopyFile(makefileSrc, makefileDst); err != nil {
-			return fmt.Errorf("error copying Makefile-pattern: %w", err)
+			return fmt.Errorf("error copying Makefile: %w", err)
 		}
 	}
 
