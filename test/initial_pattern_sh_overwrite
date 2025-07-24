@@ -1,0 +1,4 @@
+#!/bin/bash
+# Old pattern.sh content
+# This SHOULD be overwritten
+echo "Old pattern.sh script"

@@ -1,0 +1,6 @@
+# Old Makefile-pattern content
+# This SHOULD be overwritten
+
+.PHONY: old-target
+old-target:
+	@echo "This is old content"

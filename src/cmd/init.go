@@ -36,7 +36,7 @@ func runInit(withSecrets bool) error {
 	}
 
 	// Copy pattern.sh and Makefile from resources
-	resourcesDir, err := fileutils.GetResourcePath()
+	resourcesDir, err := fileutils.GetResourcesPath()
 	if err != nil {
 		return fmt.Errorf("error getting resource path: %w", err)
 	}
@@ -55,10 +55,11 @@ func runInit(withSecrets bool) error {
 	}
 
 	// Create a simple Makefile that includes Makefile-pattern (only if it doesn't exist)
+	makefileSrc := filepath.Join(resourcesDir, "Makefile")
 	makefileDst := filepath.Join(repoRoot, "Makefile")
 	if _, err := os.Stat(makefileDst); os.IsNotExist(err) {
-		if err := fileutils.CreateIncludeMakefile(makefileDst); err != nil {
-			return fmt.Errorf("error creating Makefile: %w", err)
+		if err := fileutils.CopyFile(makefileSrc, makefileDst); err != nil {
+			return fmt.Errorf("error copying Makefile-pattern: %w", err)
 		}
 	}
 

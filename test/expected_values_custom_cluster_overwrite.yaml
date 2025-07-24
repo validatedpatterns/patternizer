@@ -1,0 +1,42 @@
+clusterGroup:
+  name: custom-cluster
+  isHubCluster: true
+  customClusterField: user-cluster-config
+  namespaces:
+    - custom-pattern-name
+    - vault
+    - golang-external-secrets
+  projects:
+    - custom-pattern-name
+    - custom-cluster
+  subscriptions: {}
+  applications:
+    custom-user-app:
+      customAppField: user-app-config
+      name: custom-user-app
+      namespace: user-namespace
+      path: user/path
+      project: custom-pattern-name
+    golang-external-secrets:
+      name: golang-external-secrets
+      namespace: golang-external-secrets
+      project: custom-cluster
+      chart: golang-external-secrets
+      chartVersion: 0.1.*
+    simple:
+      name: simple
+      namespace: custom-pattern-name
+      project: custom-pattern-name
+      path: charts/simple
+    trivial:
+      name: trivial
+      namespace: custom-pattern-name
+      project: custom-pattern-name
+      path: charts/trivial
+    vault:
+      name: vault
+      namespace: vault
+      project: custom-cluster
+      chart: hashicorp-vault
+      chartVersion: 0.1.*
+customClusterTopLevel: user-cluster-top-level

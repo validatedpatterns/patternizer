@@ -22,9 +22,7 @@ COPY --from=builder /build/patternizer /usr/local/bin/patternizer
 ARG PATTERNIZER_RESOURCES_DIR=/tmp/resources
 WORKDIR ${PATTERNIZER_RESOURCES_DIR}
 
-COPY pattern.sh .
-COPY values-secret.yaml.template .
-COPY Makefile-pattern .
+COPY resources/* .
 
 ARG PATTERN_REPO_ROOT=/repo
 WORKDIR ${PATTERN_REPO_ROOT}
