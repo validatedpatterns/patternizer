@@ -1,0 +1,14 @@
+global:
+  pattern: custom-pattern-name
+  customGlobalField: user-custom-value
+  secretLoader:
+    disabled: false
+    customSecretField: user-secret-config
+main:
+  clusterGroupName: custom-cluster
+  customMainField: user-main-value
+  multiSourceConfig:
+    enabled: true
+    clusterGroupChartVersion: 0.8.*
+    customMultiSourceField: user-multisource-config
+customTopLevelField: user-top-level-value

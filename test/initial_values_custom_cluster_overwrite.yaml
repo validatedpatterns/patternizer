@@ -1,0 +1,12 @@
+clusterGroup:
+  name: custom-cluster
+  isHubCluster: true
+  customClusterField: user-cluster-config
+  applications:
+    custom-user-app:
+      name: custom-user-app
+      namespace: user-namespace
+      path: user/path
+      customAppField: user-app-config
+      project: custom-pattern-name
+customClusterTopLevel: user-cluster-top-level

@@ -11,7 +11,7 @@ import (
 func TestGetResourcePath(t *testing.T) {
 	// Test with environment variable set
 	os.Setenv("PATTERNIZER_RESOURCES_DIR", "/tmp/test")
-	path, err := fileutils.GetResourcePath()
+	path, err := fileutils.GetResourcesPath()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -21,13 +21,12 @@ func TestGetResourcePath(t *testing.T) {
 
 	// Test with environment variable unset
 	os.Unsetenv("PATTERNIZER_RESOURCES_DIR")
-	path, err = fileutils.GetResourcePath()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
+	path, err = fileutils.GetResourcesPath()
+	if err == nil {
+		t.Fatal("Expected error, got nil")
 	}
-	// Should return current directory
-	if path == "" {
-		t.Fatalf("Expected non-empty path")
+	if path != "" {
+		t.Fatalf("Expected empty path, got %s", path)
 	}
 }
 

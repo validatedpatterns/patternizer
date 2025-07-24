@@ -63,9 +63,16 @@ test-coverage: ## Run unit tests with coverage report
 	cd $(SRC_DIR) && $(GO_TEST) ./... -coverprofile=coverage.out
 	cd $(SRC_DIR) && $(GO_CMD) tool cover -func=coverage.out
 
+# Shellcheck for integration test script
+.PHONY: shellcheck
+shellcheck: ## Run shellcheck on integration test script
+	@echo "Running shellcheck on integration test script..."
+	@podman run --pull always -v "$(PWD):/mnt:z" docker.io/koalaman/shellcheck:stable test/integration_test.sh
+	@echo "Shellcheck passed"
+
 # Integration tests
 .PHONY: test-integration
-test-integration: build ## Run integration tests
+test-integration: build shellcheck ## Run integration tests
 	@echo "Running integration tests..."
 	PATTERNIZER_BINARY=./$(SRC_DIR)/$(BINARY_NAME) ./test/integration_test.sh
 
