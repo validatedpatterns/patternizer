@@ -176,6 +176,8 @@ Patternizer has a comprehensive test suite to ensure stability and correctness.
     2.  **Init with Secrets:** Ensures secrets-related applications and files are correctly added.
     3.  **Configuration Preservation:** Verifies that existing custom values are preserved when the tool is re-run.
     4.  **Sequential Execution:** Tests running `init` and then `init --with-secrets` to ensure a clean upgrade.
+    5.  **Selective File Overwriting:** Confirms that running `init` on a repository with pre-existing custom files correctly **merges YAML configurations**, preserves user-modified files (like `Makefile` and `values-secret.yaml.template`), and only overwrites essential, generated scripts (`pattern.sh`, `Makefile-pattern`).
+    6.  **Mixed State Handling:** Validates that the tool correctly initializes a partially-configured repository, **creating files that are missing** while leaving existing ones untouched.
 
 ### Architecture
 
