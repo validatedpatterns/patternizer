@@ -69,11 +69,6 @@ func GetResourcesPath() (path string, err error) {
 		return path, nil
 	}
 
-	// Fall back to current directory
-	path, err = filepath.Abs("resources")
-	if err != nil {
-		return "", fmt.Errorf("failed to get current directory: %w", err)
-	}
-
-	return path, nil
+	// Error out if the resources directory is not found
+	return "", fmt.Errorf("PATTERNIZER_RESOURCES_DIR environment variable is not set")
 }
