@@ -204,6 +204,10 @@ Patternizer has a comprehensive test suite to ensure stability and correctness.
     4.  **Sequential Execution:** Tests running `init` and then `init --with-secrets` to ensure a clean upgrade.
     5.  **Selective File Overwriting:** Confirms that running `init` on a repository with pre-existing custom files correctly **merges YAML configurations**, preserves user-modified files (like `Makefile` and `values-secret.yaml.template`), and only overwrites essential, generated scripts (`pattern.sh`, `Makefile-common`).
     6.  **Mixed State Handling:** Validates that the tool correctly initializes a partially-configured repository, **creating files that are missing** while leaving existing ones untouched.
+    7.  **Upgrade (no replace):** Removes legacy `common/` and `pattern.sh` symlink, copies `Makefile-common`/`pattern.sh`, and injects `include Makefile-common` at the top of `Makefile` when missing.
+    8.  **Upgrade (include present):** Leaves the existing `Makefile` unchanged when it already contains `include Makefile-common` anywhere.
+    9.  **Upgrade with `--replace-makefile`:** Replaces `Makefile` with the default and refreshes common assets.
+    10. **Upgrade (no Makefile present):** Creates the default `Makefile` and refreshes common assets when a `Makefile` does not exist.
 
 ### Architecture
 
