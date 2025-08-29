@@ -10,6 +10,7 @@ import (
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	var withSecrets bool
+	var replaceMakefile bool
 
 	var rootCmd = &cobra.Command{
 		Use:   "patternizer",
@@ -39,6 +40,24 @@ configures the pattern.sh script for secrets usage.`,
 	initCmd.Flags().BoolVar(&withSecrets, "with-secrets", false, "Include secrets template and configure pattern for secrets usage")
 
 	rootCmd.AddCommand(initCmd)
+
+	var upgradeCmd = &cobra.Command{
+		Use:   "upgrade",
+		Short: "Upgrade an existing pattern repository",
+		Long: `Upgrade an existing pattern repository by refreshing common assets.
+
+This will remove the legacy common/ directory and pattern.sh symlink if present,
+copy updated Makefile-common and pattern.sh, and optionally replace or update the Makefile.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 && args[0] == "help" {
+				return cmd.Help()
+			}
+			return runUpgrade(replaceMakefile)
+		},
+	}
+
+	upgradeCmd.Flags().BoolVar(&replaceMakefile, "replace-makefile", false, "Replace the existing Makefile with the default")
+	rootCmd.AddCommand(upgradeCmd)
 
 	// Hide the completion command from help since this is primarily used in containers
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true

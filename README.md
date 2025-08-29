@@ -1,6 +1,6 @@
 # Patternizer
 
-[![Quay Repository](https://img.shields.io/badge/Quay.io-patternizer-blue?logo=quay)](https://quay.io/repository/hybridcloudpatterns/patternizer)
+[![Quay Repository](https://img.shields.io/badge/Quay.io-patternizer-blue?logo=quay)](https://quay.io/repository/validatedpatterns/patternizer)
 [![CI Pipeline](https://github.com/validatedpatterns/patternizer/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/validatedpatterns/patternizer/actions/workflows/ci.yaml)
 
 **Patternizer** is a command-line tool that bootstraps a Git repository containing Helm charts into a ready-to-use Validated Pattern. It automatically generates the necessary scaffolding, configuration files, and utility scripts, so you can get your pattern up and running in minutes.
@@ -15,6 +15,7 @@
     - [Container Usage (Recommended)](#container-usage-recommended)
       - [**Initialize without secrets:**](#initialize-without-secrets)
       - [**Initialize with secrets support:**](#initialize-with-secrets-support)
+      - [**Upgrade an existing pattern repository:**](#upgrade-an-existing-pattern-repository)
     - [Understanding Secrets Management](#understanding-secrets-management)
     - [Generated Files](#generated-files)
   - [Development \& Contributing](#development--contributing)
@@ -33,6 +34,7 @@
   - 🔍 **Auto-discovery** of Helm charts and Git repository metadata
   - 🔐 **Optional secrets integration** with Vault and External Secrets
   - 🏗️ **Makefile-driven** utility scripts for easy pattern management
+  - ♻️ **Upgrade command** to refresh existing pattern repositories to the latest common structure
 
 ## Quick Start
 
@@ -47,7 +49,7 @@ Navigate to your repository's root directory and run the initialization command:
 
 ```bash
 # In the root of your pattern-repo
-podman run -v "$PWD:/repo:z" quay.io/hybridcloudpatterns/patternizer init
+podman run -v "$PWD:/repo:z" quay.io/validatedpatterns/patternizer init
 ```
 
 This single command will generate all the necessary files to turn your repository into a Validated Pattern.
@@ -65,7 +67,7 @@ This single command will generate all the necessary files to turn your repositor
 2.  **Initialize the pattern using Patternizer:**
 
     ```bash
-    podman run -v "$PWD:/repo:z" quay.io/hybridcloudpatterns/patternizer init
+    podman run -v "$PWD:/repo:z" quay.io/validatedpatterns/patternizer init
     ```
 
 3.  **Review, commit, and push the generated files:**
@@ -92,14 +94,38 @@ Using the prebuilt container is the easiest way to run Patternizer, as it requir
 #### **Initialize without secrets:**
 
 ```bash
-podman run -v "$PWD:/repo:z" quay.io/hybridcloudpatterns/patternizer init
+podman run -v "$PWD:/repo:z" quay.io/validatedpatterns/patternizer init
 ```
 
 #### **Initialize with secrets support:**
 
 ```bash
-podman run -v "$PWD:/repo:z" quay.io/hybridcloudpatterns/patternizer init --with-secrets
+podman run -v "$PWD:/repo:z" quay.io/validatedpatterns/patternizer init --with-secrets
 ```
+
+#### **Upgrade an existing pattern repository:**
+
+Use this to migrate or refresh an existing pattern repo to the latest common structure and scripts.
+
+```bash
+# Refresh common assets, keep your Makefile unless it lacks the include
+podman run -v "$PWD:/repo:z" quay.io/validatedpatterns/patternizer upgrade
+
+# Replace your Makefile with the default from Patternizer
+podman run -v "$PWD:/repo:z" quay.io/validatedpatterns/patternizer upgrade --replace-makefile
+```
+
+What upgrade does:
+
+- Removes the `common/` directory if it exists
+- Removes `./pattern.sh` if it exists (symlink or file)
+- Copies `resources/Makefile-common` and `resources/pattern.sh` into the repo root
+- Makefile handling:
+  - If `--replace-makefile` is set: copies the default `Makefile` into the repo root (overwriting any existing one)
+  - If not set:
+    - If no `Makefile` exists: copies the default `Makefile`
+    - If a `Makefile` exists and already contains `include Makefile-common` anywhere: leaves it unchanged
+    - Otherwise: prepends `include Makefile-common` to the first line so your existing targets are preserved
 
 ### Understanding Secrets Management
 

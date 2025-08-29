@@ -17,6 +17,13 @@ TEST_DIR_CUSTOM="/tmp/patternizer-integration-test-custom"
 TEST_DIR_SEQUENTIAL="/tmp/patternizer-integration-test-sequential"
 TEST_DIR_OVERWRITE="/tmp/patternizer-integration-test-overwrite"
 TEST_DIR_MIXED="/tmp/patternizer-integration-test-mixed"
+TEST_DIR_UPGRADE="/tmp/patternizer-integration-test-upgrade"
+TEST_DIR_UPGRADE_INCLUDE="/tmp/patternizer-integration-test-upgrade-include"
+TEST_DIR_UPGRADE_REPLACE="/tmp/patternizer-integration-test-upgrade-replace"
+TEST_DIR_UPGRADE_NOMAKEFILE="/tmp/patternizer-integration-test-upgrade-nomakefile"
+REPO_NAME=$(basename -s .git "$TEST_REPO_URL")
+SHARED_CLONE_PARENT="/tmp/patternizer-shared-clone"
+SHARED_REPO_DIR="$SHARED_CLONE_PARENT/$REPO_NAME"
 
 echo -e "${YELLOW}Starting patternizer integration tests...${NC}"
 
@@ -38,6 +45,23 @@ if [ -d "$TEST_DIR_OVERWRITE" ]; then
 fi
 if [ -d "$TEST_DIR_MIXED" ]; then
     rm -rf "$TEST_DIR_MIXED"
+fi
+if [ -d "$TEST_DIR_UPGRADE" ]; then
+    rm -rf "$TEST_DIR_UPGRADE"
+fi
+if [ -d "$TEST_DIR_UPGRADE_INCLUDE" ]; then
+    rm -rf "$TEST_DIR_UPGRADE_INCLUDE"
+fi
+if [ -d "$TEST_DIR_UPGRADE_REPLACE" ]; then
+    rm -rf "$TEST_DIR_UPGRADE_REPLACE"
+fi
+if [ -d "$TEST_DIR_UPGRADE_NOMAKEFILE" ]; then
+    rm -rf "$TEST_DIR_UPGRADE_NOMAKEFILE"
+fi
+
+# Clean up any previous shared clone
+if [ -d "$SHARED_CLONE_PARENT" ]; then
+    rm -rf "$SHARED_CLONE_PARENT"
 fi
 
 # Convert PATTERNIZER_BINARY to absolute path before changing directories
@@ -77,6 +101,24 @@ if [ ! -x "$PATTERNIZER_BINARY" ]; then
     echo -e "${RED}ERROR: Patternizer binary not found or not executable at: $PATTERNIZER_BINARY${NC}"
     exit 1
 fi
+
+# Perform a single shallow clone of the source repository into a shared location
+mkdir -p "$SHARED_CLONE_PARENT"
+cd "$SHARED_CLONE_PARENT"
+git clone --depth 1 "$TEST_REPO_URL"
+cd "$REPO_ROOT"
+
+# Helper to prepare a test repository copy and cd into it
+prepare_and_enter_repo() {
+    local dest_dir="$1"
+    local header_msg="$2"
+    test_header "$header_msg"
+    cd "$REPO_ROOT"
+    mkdir -p "$dest_dir"
+    rm -rf "${dest_dir:?}/${REPO_NAME:?}"
+    cp -a "$SHARED_REPO_DIR" "$dest_dir/"
+    cd "$dest_dir/$REPO_NAME"
+}
 
 # Function to compare YAML files (ignoring whitespace differences)
 compare_yaml() {
@@ -180,11 +222,7 @@ check_file_exists() {
 #
 # Test 1: Basic initialization (without secrets)
 #
-test_header "=== Test 1: Basic initialization (without secrets) ==="
-
-test_header "Cloning test repository..."
-git clone "$TEST_REPO_URL" "$TEST_DIR"
-cd "$TEST_DIR"
+prepare_and_enter_repo "$TEST_DIR" "=== Test 1: Basic initialization (without secrets) ==="
 
 test_header "Running patternizer init..."
 "$PATTERNIZER_BINARY" init
@@ -216,12 +254,7 @@ test_pass "=== Test 1: Basic initialization PASSED ==="
 #
 # Test 2: Initialization with secrets
 #
-test_header "=== Test 2: Initialization with secrets ==="
-
-cd "$REPO_ROOT"  # Go back to repo root
-test_header "Cloning test repository for secrets test..."
-git clone "$TEST_REPO_URL" "$TEST_DIR_SECRETS"
-cd "$TEST_DIR_SECRETS"
+prepare_and_enter_repo "$TEST_DIR_SECRETS" "=== Test 2: Initialization with secrets ==="
 
 test_header "Running patternizer init --with-secrets..."
 "$PATTERNIZER_BINARY" init --with-secrets
@@ -256,12 +289,7 @@ test_pass "=== Test 2: Initialization with secrets PASSED ==="
 #
 # Test 3: Custom pattern and cluster group names (merging test with secrets)
 #
-test_header "=== Test 3: Custom pattern and cluster group names (with secrets) ==="
-
-cd "$REPO_ROOT"  # Go back to repo root
-test_header "Cloning test repository for custom names test..."
-git clone "$TEST_REPO_URL" "$TEST_DIR_CUSTOM"
-cd "$TEST_DIR_CUSTOM"
+prepare_and_enter_repo "$TEST_DIR_CUSTOM" "=== Test 3: Custom pattern and cluster group names (with secrets) ==="
 
 test_header "Setting up initial values-global.yaml with custom names..."
 cp "$INITIAL_VALUES_GLOBAL_CUSTOM" "values-global.yaml"
@@ -299,13 +327,7 @@ test_pass "=== Test 3: Custom pattern and cluster group names (with secrets) PAS
 #
 # Test 4: Sequential execution (init followed by init --with-secrets)
 #
-test_header "=== Test 4: Sequential execution (init + init --with-secrets) ==="
-
-cd "$REPO_ROOT"  # Go back to repo root
-
-test_header "Cloning test repository for sequential test..."
-git clone "$TEST_REPO_URL" "$TEST_DIR_SEQUENTIAL"
-cd "$TEST_DIR_SEQUENTIAL"
+prepare_and_enter_repo "$TEST_DIR_SEQUENTIAL" "=== Test 4: Sequential execution (init + init --with-secrets) ==="
 
 test_header "Running patternizer init (first)..."
 "$PATTERNIZER_BINARY" init
@@ -343,13 +365,7 @@ test_pass "=== Test 4: Sequential execution PASSED ==="
 #
 # Test 5: File overwrite behavior with existing custom files
 #
-test_header "=== Test 5: File overwrite behavior with existing custom files ==="
-
-cd "$REPO_ROOT"  # Go back to repo root
-
-test_header "Cloning test repository for overwrite behavior test..."
-git clone "$TEST_REPO_URL" "$TEST_DIR_OVERWRITE"
-cd "$TEST_DIR_OVERWRITE"
+prepare_and_enter_repo "$TEST_DIR_OVERWRITE" "=== Test 5: File overwrite behavior with existing custom files ==="
 
 test_header "Setting up existing custom files..."
 
@@ -399,13 +415,7 @@ test_pass "=== Test 5: File overwrite behavior PASSED ==="
 #
 # Test 6: Mixed file overwrite behavior (some files exist, some don't)
 #
-test_header "=== Test 6: Mixed file overwrite behavior ==="
-
-cd "$REPO_ROOT"  # Go back to repo root
-
-test_header "Cloning test repository for mixed scenario..."
-git clone "$TEST_REPO_URL" "$TEST_DIR_MIXED"
-cd "$TEST_DIR_MIXED"
+prepare_and_enter_repo "$TEST_DIR_MIXED" "=== Test 6: Mixed file overwrite behavior ==="
 
 test_header "Setting up partial existing files..."
 
@@ -445,8 +455,120 @@ fi
 
 test_pass "=== Test 6: Mixed file overwrite behavior PASSED ==="
 
+#
+# Test 7: Upgrade without --replace-makefile, inject include on first line
+#
+prepare_and_enter_repo "$TEST_DIR_UPGRADE" "=== Test 7: Upgrade (no replace, inject include) ==="
+
+# Simulate legacy structure
+mkdir -p common
+ln -s common/pattern.sh pattern.sh
+
+# Create a simple Makefile without include
+cat > Makefile <<'EOF'
+all:
+	@echo hello
+EOF
+
+# Run upgrade
+"$PATTERNIZER_BINARY" upgrade
+
+# Verify common/ removed and pattern.sh replaced (not symlink)
+if [ -d common ]; then
+    test_fail "common directory was not removed by upgrade"
+fi
+if [ -L pattern.sh ]; then
+    test_fail "pattern.sh symlink was not removed by upgrade"
+fi
+
+# Verify pattern.sh and Makefile-common contents
+compare_files "$EXPECTED_PATTERN_SH" "pattern.sh" "pattern.sh copied during upgrade"
+compare_files "$EXPECTED_MAKEFILE_COMMON" "Makefile-common" "Makefile-common copied during upgrade"
+
+# Verify Makefile first line and content
+EXPECTED_UPGRADE_MF=$(mktemp)
+printf "include Makefile-common\nall:\n\t@echo hello\n" > "$EXPECTED_UPGRADE_MF"
+compare_files "$EXPECTED_UPGRADE_MF" "Makefile" "Makefile injected include at first line"
+rm -f "$EXPECTED_UPGRADE_MF"
+
+test_pass "=== Test 7: Upgrade (no replace, inject include) PASSED ==="
+
+#
+# Test 8: Upgrade without --replace-makefile, include already exists elsewhere
+#
+prepare_and_enter_repo "$TEST_DIR_UPGRADE_INCLUDE" "=== Test 8: Upgrade (no replace, include present) ==="
+
+# Legacy bits
+mkdir -p common
+ln -s common/pattern.sh pattern.sh
+
+# Makefile already contains include, not on first line
+cat > Makefile <<'EOF'
+foo:
+	@echo foo
+include Makefile-common
+bar:
+	@echo bar
+EOF
+cp Makefile /tmp/expected_makefile_include_present
+
+# Run upgrade
+"$PATTERNIZER_BINARY" upgrade
+
+# Verify removals and copies
+if [ -d common ]; then
+    test_fail "common directory was not removed by upgrade (include-present case)"
+fi
+if [ -L pattern.sh ]; then
+    test_fail "pattern.sh symlink was not removed by upgrade (include-present case)"
+fi
+compare_files "$EXPECTED_PATTERN_SH" "pattern.sh" "pattern.sh copied during upgrade (include-present)"
+compare_files "$EXPECTED_MAKEFILE_COMMON" "Makefile-common" "Makefile-common copied during upgrade (include-present)"
+
+# Verify Makefile unchanged
+compare_files "/tmp/expected_makefile_include_present" "Makefile" "Makefile unchanged when include already present"
+rm -f /tmp/expected_makefile_include_present
+
+test_pass "=== Test 8: Upgrade (no replace, include present) PASSED ==="
+
+#
+# Test 9: Upgrade with --replace-makefile replaces Makefile exactly
+#
+prepare_and_enter_repo "$TEST_DIR_UPGRADE_REPLACE" "=== Test 9: Upgrade (--replace-makefile) ==="
+
+# Create a custom Makefile to be overwritten
+echo "custom: ; @echo custom" > Makefile
+
+# Run upgrade with flag
+"$PATTERNIZER_BINARY" upgrade --replace-makefile
+
+# Verify Makefile replaced and other files copied
+compare_files "$EXPECTED_MAKEFILE" "Makefile" "Makefile replaced during upgrade --replace-makefile"
+compare_files "$EXPECTED_MAKEFILE_COMMON" "Makefile-common" "Makefile-common copied during upgrade --replace-makefile"
+compare_files "$EXPECTED_PATTERN_SH" "pattern.sh" "pattern.sh copied during upgrade --replace-makefile"
+
+test_pass "=== Test 9: Upgrade (--replace-makefile) PASSED ==="
+
+#
+# Test 10: Upgrade without existing Makefile creates default Makefile
+#
+prepare_and_enter_repo "$TEST_DIR_UPGRADE_NOMAKEFILE" "=== Test 10: Upgrade (no Makefile present) ==="
+
+# Ensure no Makefile exists
+rm -f Makefile
+
+# Run upgrade
+"$PATTERNIZER_BINARY" upgrade
+
+# Verify Makefile created and matches default
+compare_files "$EXPECTED_MAKEFILE" "Makefile" "Makefile created during upgrade when missing"
+compare_files "$EXPECTED_MAKEFILE_COMMON" "Makefile-common" "Makefile-common copied during upgrade when missing"
+compare_files "$EXPECTED_PATTERN_SH" "pattern.sh" "pattern.sh copied during upgrade when missing"
+
+test_pass "=== Test 10: Upgrade (no Makefile present) PASSED ==="
+
 test_pass "All integration tests passed!"
 
 # Clean up
 cd "$REPO_ROOT"
-rm -rf "$TEST_DIR" "$TEST_DIR_SECRETS" "$TEST_DIR_CUSTOM" "$TEST_DIR_SEQUENTIAL" "$TEST_DIR_OVERWRITE" "$TEST_DIR_MIXED"
+rm -rf "$TEST_DIR" "$TEST_DIR_SECRETS" "$TEST_DIR_CUSTOM" "$TEST_DIR_SEQUENTIAL" "$TEST_DIR_OVERWRITE" "$TEST_DIR_MIXED" "$TEST_DIR_UPGRADE" "$TEST_DIR_UPGRADE_INCLUDE" "$TEST_DIR_UPGRADE_REPLACE" "$TEST_DIR_UPGRADE_NOMAKEFILE" "$SHARED_CLONE_PARENT"
