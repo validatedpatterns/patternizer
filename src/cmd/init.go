@@ -47,14 +47,14 @@ func runInit(withSecrets bool) error {
 		return fmt.Errorf("error copying pattern.sh: %w", err)
 	}
 
-	// Always copy Makefile-pattern to the pattern repo
-	makefilePatternSrc := filepath.Join(resourcesDir, "Makefile-pattern")
-	makefilePatternDst := filepath.Join(repoRoot, "Makefile-pattern")
+	// Always copy Makefile-common to the pattern repo
+	makefilePatternSrc := filepath.Join(resourcesDir, "Makefile-common")
+	makefilePatternDst := filepath.Join(repoRoot, "Makefile-common")
 	if err := fileutils.CopyFile(makefilePatternSrc, makefilePatternDst); err != nil {
-		return fmt.Errorf("error copying Makefile-pattern: %w", err)
+		return fmt.Errorf("error copying Makefile-common: %w", err)
 	}
 
-	// Create a simple Makefile that includes Makefile-pattern (only if it doesn't exist)
+	// Create a simple Makefile that includes Makefile-common (only if it doesn't exist)
 	makefileSrc := filepath.Join(resourcesDir, "Makefile")
 	makefileDst := filepath.Join(repoRoot, "Makefile")
 	if _, err := os.Stat(makefileDst); os.IsNotExist(err) {

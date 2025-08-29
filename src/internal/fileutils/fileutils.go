@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // CopyFile copies a file from src to dst. If dst already exists, it will be overwritten.
@@ -71,4 +72,61 @@ func GetResourcesPath() (path string, err error) {
 
 	// Error out if the resources directory is not found
 	return "", fmt.Errorf("PATTERNIZER_RESOURCES_DIR environment variable is not set")
+}
+
+// RemovePathIfExists removes a file, directory, or symlink at the given path if it exists.
+// It does nothing if the path does not exist.
+func RemovePathIfExists(targetPath string) error {
+	if targetPath == "" {
+		return nil
+	}
+	info, err := os.Lstat(targetPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+
+	if info.IsDir() {
+		return os.RemoveAll(targetPath)
+	}
+
+	return os.Remove(targetPath)
+}
+
+// FileContainsIncludeMakefileCommon checks if a Makefile already contains an include Makefile-common line.
+func FileContainsIncludeMakefileCommon(makefilePath string) (bool, error) {
+	data, err := os.ReadFile(makefilePath)
+	if err != nil {
+		return false, err
+	}
+	contents := string(data)
+	// We keep this simple to avoid regex: look for lines with 'include' and 'Makefile-common'
+	for _, line := range strings.Split(contents, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		if strings.Contains(trimmed, "include") && strings.Contains(trimmed, "Makefile-common") {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// PrependLineToFile prepends a line to a file, preserving existing permissions.
+func PrependLineToFile(filePath, line string) error {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
+
+	mode := os.FileMode(0o644)
+	if info, statErr := os.Stat(filePath); statErr == nil {
+		mode = info.Mode()
+	}
+
+	newContents := []byte(line + "\n" + string(data))
+	return os.WriteFile(filePath, newContents, mode)
 }

@@ -1,6 +1,6 @@
 # Patternizer
 
-[![Quay Repository](https://img.shields.io/badge/Quay.io-patternizer-blue?logo=quay)](https://quay.io/repository/hybridcloudpatterns/patternizer)
+[![Quay Repository](https://img.shields.io/badge/Quay.io-patternizer-blue?logo=quay)](https://quay.io/repository/validatedpatterns/patternizer)
 [![CI Pipeline](https://github.com/validatedpatterns/patternizer/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/validatedpatterns/patternizer/actions/workflows/ci.yaml)
 
 **Patternizer** is a command-line tool that bootstraps a Git repository containing Helm charts into a ready-to-use Validated Pattern. It automatically generates the necessary scaffolding, configuration files, and utility scripts, so you can get your pattern up and running in minutes.
@@ -15,6 +15,7 @@
     - [Container Usage (Recommended)](#container-usage-recommended)
       - [**Initialize without secrets:**](#initialize-without-secrets)
       - [**Initialize with secrets support:**](#initialize-with-secrets-support)
+      - [**Upgrade an existing pattern repository:**](#upgrade-an-existing-pattern-repository)
     - [Understanding Secrets Management](#understanding-secrets-management)
     - [Generated Files](#generated-files)
   - [Development \& Contributing](#development--contributing)
@@ -33,6 +34,7 @@
   - 🔍 **Auto-discovery** of Helm charts and Git repository metadata
   - 🔐 **Optional secrets integration** with Vault and External Secrets
   - 🏗️ **Makefile-driven** utility scripts for easy pattern management
+  - ♻️ **Upgrade command** to refresh existing pattern repositories to the latest common structure
 
 ## Quick Start
 
@@ -47,7 +49,7 @@ Navigate to your repository's root directory and run the initialization command:
 
 ```bash
 # In the root of your pattern-repo
-podman run -v "$PWD:/repo:z" quay.io/hybridcloudpatterns/patternizer init
+podman run -v "$PWD:/repo:z" quay.io/validatedpatterns/patternizer init
 ```
 
 This single command will generate all the necessary files to turn your repository into a Validated Pattern.
@@ -65,7 +67,7 @@ This single command will generate all the necessary files to turn your repositor
 2.  **Initialize the pattern using Patternizer:**
 
     ```bash
-    podman run -v "$PWD:/repo:z" quay.io/hybridcloudpatterns/patternizer init
+    podman run -v "$PWD:/repo:z" quay.io/validatedpatterns/patternizer init
     ```
 
 3.  **Review, commit, and push the generated files:**
@@ -92,14 +94,38 @@ Using the prebuilt container is the easiest way to run Patternizer, as it requir
 #### **Initialize without secrets:**
 
 ```bash
-podman run -v "$PWD:/repo:z" quay.io/hybridcloudpatterns/patternizer init
+podman run -v "$PWD:/repo:z" quay.io/validatedpatterns/patternizer init
 ```
 
 #### **Initialize with secrets support:**
 
 ```bash
-podman run -v "$PWD:/repo:z" quay.io/hybridcloudpatterns/patternizer init --with-secrets
+podman run -v "$PWD:/repo:z" quay.io/validatedpatterns/patternizer init --with-secrets
 ```
+
+#### **Upgrade an existing pattern repository:**
+
+Use this to migrate or refresh an existing pattern repo to the latest common structure and scripts.
+
+```bash
+# Refresh common assets, keep your Makefile unless it lacks the include
+podman run -v "$PWD:/repo:z" quay.io/validatedpatterns/patternizer upgrade
+
+# Replace your Makefile with the default from Patternizer
+podman run -v "$PWD:/repo:z" quay.io/validatedpatterns/patternizer upgrade --replace-makefile
+```
+
+What upgrade does:
+
+- Removes the `common/` directory if it exists
+- Removes `./pattern.sh` if it exists (symlink or file)
+- Copies `resources/Makefile-common` and `resources/pattern.sh` into the repo root
+- Makefile handling:
+  - If `--replace-makefile` is set: copies the default `Makefile` into the repo root (overwriting any existing one)
+  - If not set:
+    - If no `Makefile` exists: copies the default `Makefile`
+    - If a `Makefile` exists and already contains `include Makefile-common` anywhere: leaves it unchanged
+    - Otherwise: prepends `include Makefile-common` to the first line so your existing targets are preserved
 
 ### Understanding Secrets Management
 
@@ -118,8 +144,8 @@ Running `patternizer init` creates the following:
   * `values-global.yaml`: Global pattern configuration.
   * `values-<cluster_group>.yaml`: Cluster group-specific values.
   * `pattern.sh`: A utility script for common pattern operations (`install`, `upgrade`, etc.).
-  * `Makefile`: A simple Makefile that includes `Makefile-pattern`.
-  * `Makefile-pattern`: The core Makefile with all pattern-related targets.
+  * `Makefile`: A simple Makefile that includes `Makefile-common`.
+  * `Makefile-common`: The core Makefile with all pattern-related targets.
 
 Using the `--with-secrets` flag additionally creates:
 
@@ -176,8 +202,12 @@ Patternizer has a comprehensive test suite to ensure stability and correctness.
     2.  **Init with Secrets:** Ensures secrets-related applications and files are correctly added.
     3.  **Configuration Preservation:** Verifies that existing custom values are preserved when the tool is re-run.
     4.  **Sequential Execution:** Tests running `init` and then `init --with-secrets` to ensure a clean upgrade.
-    5.  **Selective File Overwriting:** Confirms that running `init` on a repository with pre-existing custom files correctly **merges YAML configurations**, preserves user-modified files (like `Makefile` and `values-secret.yaml.template`), and only overwrites essential, generated scripts (`pattern.sh`, `Makefile-pattern`).
+    5.  **Selective File Overwriting:** Confirms that running `init` on a repository with pre-existing custom files correctly **merges YAML configurations**, preserves user-modified files (like `Makefile` and `values-secret.yaml.template`), and only overwrites essential, generated scripts (`pattern.sh`, `Makefile-common`).
     6.  **Mixed State Handling:** Validates that the tool correctly initializes a partially-configured repository, **creating files that are missing** while leaving existing ones untouched.
+    7.  **Upgrade (no replace):** Removes legacy `common/` and `pattern.sh` symlink, copies `Makefile-common`/`pattern.sh`, and injects `include Makefile-common` at the top of `Makefile` when missing.
+    8.  **Upgrade (include present):** Leaves the existing `Makefile` unchanged when it already contains `include Makefile-common` anywhere.
+    9.  **Upgrade with `--replace-makefile`:** Replaces `Makefile` with the default and refreshes common assets.
+    10. **Upgrade (no Makefile present):** Creates the default `Makefile` and refreshes common assets when a `Makefile` does not exist.
 
 ### Architecture
 

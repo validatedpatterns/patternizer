@@ -9,7 +9,7 @@ function version {
 }
 
 if [ -z "$PATTERN_UTILITY_CONTAINER" ]; then
-	PATTERN_UTILITY_CONTAINER="quay.io/hybridcloudpatterns/utility-container"
+	PATTERN_UTILITY_CONTAINER="quay.io/validatedpatterns/utility-container"
 fi
 # If PATTERN_DISCONNECTED_HOME is set it will be used to populate both PATTERN_UTILITY_CONTAINER
 # and PATTERN_INSTALL_CHART automatically
@@ -84,25 +84,28 @@ fi
 
 podman run -it --rm --pull=newer \
     --security-opt label=disable \
+    -e ANSIBLE_STDOUT_CALLBACK \
+    -e DISABLE_VALIDATE_ORIGIN \
     -e EXTRA_HELM_OPTS \
     -e EXTRA_PLAYBOOK_OPTS \
-    -e TARGET_ORIGIN \
-    -e TARGET_SITE \
-    -e TARGET_BRANCH \
-    -e NAME \
-    -e TOKEN_SECRET \
-    -e TOKEN_NAMESPACE \
-    -e VALUES_SECRET \
-    -e KUBECONFIG \
-    -e PATTERN_INSTALL_CHART \
-    -e PATTERN_DISCONNECTED_HOME \
-    -e DISABLE_VALIDATE_ORIGIN \
     -e K8S_AUTH_HOST \
-    -e K8S_AUTH_VERIFY_SSL \
-    -e K8S_AUTH_SSL_CA_CERT \
-    -e K8S_AUTH_USERNAME \
     -e K8S_AUTH_PASSWORD \
+    -e K8S_AUTH_SSL_CA_CERT \
     -e K8S_AUTH_TOKEN \
+    -e K8S_AUTH_USERNAME \
+    -e K8S_AUTH_VERIFY_SSL \
+    -e KUBECONFIG \
+    -e PATTERN_DIR \
+    -e PATTERN_DISCONNECTED_HOME \
+    -e PATTERN_INSTALL_CHART \
+    -e PATTERN_NAME \
+    -e TARGET_BRANCH \
+    -e TARGET_CLUSTERGROUP \
+    -e TARGET_ORIGIN \
+    -e TOKEN_NAMESPACE \
+    -e TOKEN_SECRET \
+    -e UUID_FILE \
+    -e VALUES_SECRET \
     ${PKI_HOST_MOUNT_ARGS} \
     -v "${HOME}":"${HOME}" \
     -v "${HOME}":/pattern-home \

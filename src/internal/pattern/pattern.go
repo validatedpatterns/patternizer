@@ -3,7 +3,6 @@ package pattern
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -22,23 +21,8 @@ func GetPatternNameAndRepoRoot() (patternName, repoRoot string, err error) {
 		return "", "", fmt.Errorf("failed to get current directory: %w", err)
 	}
 
-	// Try to get the remote URL using git command
-	cmd := exec.Command("git", "remote", "get-url", "origin")
-	cmd.Dir = repoRoot
-	output, err := cmd.Output()
-	if err != nil {
-		// If we can't get the remote URL, use the directory name as pattern name
-		patternName = filepath.Base(repoRoot)
-		return patternName, repoRoot, nil
-	}
-
-	// Extract pattern name from the remote URL
-	remoteURL := strings.TrimSpace(string(output))
-	patternName, err = extractPatternNameFromURL(remoteURL)
-	if err != nil {
-		return "", "", fmt.Errorf("failed to extract pattern name from git remote URL '%s': %w", remoteURL, err)
-	}
-
+	// Use the basename as the pattern name
+	patternName = filepath.Base(repoRoot)
 	return patternName, repoRoot, nil
 }
 
