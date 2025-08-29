@@ -1,4 +1,4 @@
-# Old Makefile-pattern content
+# Old Makefile-common content
 # This SHOULD be overwritten
 
 .PHONY: old-target

@@ -68,7 +68,7 @@ INITIAL_VALUES_SECRET_TEMPLATE_OVERWRITE="$REPO_ROOT/test/initial_values_secret_
 
 # Set paths for expected resource files
 EXPECTED_MAKEFILE="$PATTERNIZER_RESOURCES_DIR/Makefile"
-EXPECTED_MAKEFILE_PATTERN="$PATTERNIZER_RESOURCES_DIR/Makefile-pattern"
+EXPECTED_MAKEFILE_COMMON="$PATTERNIZER_RESOURCES_DIR/Makefile-common"
 EXPECTED_PATTERN_SH="$PATTERNIZER_RESOURCES_DIR/pattern.sh"
 EXPECTED_VALUES_SECRET_TEMPLATE="$PATTERNIZER_RESOURCES_DIR/values-secret.yaml.template"
 
@@ -208,8 +208,8 @@ fi
 # Test 1.4: Check Makefile has exact expected content
 compare_files "$EXPECTED_MAKEFILE" "Makefile" "Makefile has expected content (init without secrets)"
 
-# Test 1.5: Check Makefile-pattern has exact expected content
-compare_files "$EXPECTED_MAKEFILE_PATTERN" "Makefile-pattern" "Makefile-pattern has expected content (init without secrets)"
+# Test 1.5: Check Makefile-common has exact expected content
+compare_files "$EXPECTED_MAKEFILE_COMMON" "Makefile-common" "Makefile-common has expected content (init without secrets)"
 
 test_pass "=== Test 1: Basic initialization PASSED ==="
 
@@ -248,8 +248,8 @@ compare_files "$EXPECTED_VALUES_SECRET_TEMPLATE" "values-secret.yaml.template" "
 # Test 2.5: Check Makefile has exact expected content
 compare_files "$EXPECTED_MAKEFILE" "Makefile" "Makefile has expected content (init with secrets)"
 
-# Test 2.6: Check Makefile-pattern has exact expected content
-compare_files "$EXPECTED_MAKEFILE_PATTERN" "Makefile-pattern" "Makefile-pattern has expected content (init with secrets)"
+# Test 2.6: Check Makefile-common has exact expected content
+compare_files "$EXPECTED_MAKEFILE_COMMON" "Makefile-common" "Makefile-common has expected content (init with secrets)"
 
 test_pass "=== Test 2: Initialization with secrets PASSED ==="
 
@@ -291,8 +291,8 @@ compare_files "$EXPECTED_VALUES_SECRET_TEMPLATE" "values-secret.yaml.template" "
 # Test 3.5: Check Makefile has exact expected content
 compare_files "$EXPECTED_MAKEFILE" "Makefile" "Makefile has expected content (custom names with secrets)"
 
-# Test 3.6: Check Makefile-pattern has exact expected content
-compare_files "$EXPECTED_MAKEFILE_PATTERN" "Makefile-pattern" "Makefile-pattern has expected content (custom names with secrets)"
+# Test 3.6: Check Makefile-common has exact expected content
+compare_files "$EXPECTED_MAKEFILE_COMMON" "Makefile-common" "Makefile-common has expected content (custom names with secrets)"
 
 test_pass "=== Test 3: Custom pattern and cluster group names (with secrets) PASSED ==="
 
@@ -335,8 +335,8 @@ compare_files "$EXPECTED_VALUES_SECRET_TEMPLATE" "values-secret.yaml.template" "
 # Test 4.5: Check Makefile has exact expected content
 compare_files "$EXPECTED_MAKEFILE" "Makefile" "Makefile has expected content (sequential execution)"
 
-# Test 4.6: Check Makefile-pattern has exact expected content
-compare_files "$EXPECTED_MAKEFILE_PATTERN" "Makefile-pattern" "Makefile-pattern has expected content (sequential execution)"
+# Test 4.6: Check Makefile-common has exact expected content
+compare_files "$EXPECTED_MAKEFILE_COMMON" "Makefile-common" "Makefile-common has expected content (sequential execution)"
 
 test_pass "=== Test 4: Sequential execution PASSED ==="
 
@@ -357,7 +357,7 @@ test_header "Setting up existing custom files..."
 cp "$INITIAL_VALUES_GLOBAL_OVERWRITE" "values-global.yaml"
 cp "$INITIAL_VALUES_CUSTOM_CLUSTER_OVERWRITE" "values-custom-cluster.yaml"
 cp "$INITIAL_MAKEFILE_OVERWRITE" "Makefile"
-cp "$INITIAL_MAKEFILE_PATTERN_OVERWRITE" "Makefile-pattern"
+cp "$INITIAL_MAKEFILE_PATTERN_OVERWRITE" "Makefile-common"
 cp "$INITIAL_PATTERN_SH_OVERWRITE" "pattern.sh"
 cp "$INITIAL_VALUES_SECRET_TEMPLATE_OVERWRITE" "values-secret.yaml.template"
 
@@ -378,8 +378,8 @@ compare_yaml "$EXPECTED_VALUES_CUSTOM_CLUSTER_OVERWRITE" "values-custom-cluster.
 # Test 5.3: Makefile should NOT be overwritten
 compare_files "$INITIAL_MAKEFILE_OVERWRITE" "Makefile" "Makefile was not overwritten (content preserved)"
 
-# Test 5.4: Makefile-pattern SHOULD be overwritten with exact expected content
-compare_files "$EXPECTED_MAKEFILE_PATTERN" "Makefile-pattern" "Makefile-pattern was overwritten with correct content"
+# Test 5.4: Makefile-common SHOULD be overwritten with exact expected content
+compare_files "$EXPECTED_MAKEFILE_COMMON" "Makefile-common" "Makefile-common was overwritten with correct content"
 
 # Test 5.5: pattern.sh SHOULD be overwritten with exact expected content and be executable
 compare_files "$EXPECTED_PATTERN_SH" "pattern.sh" "pattern.sh was overwritten with correct content"
@@ -416,7 +416,7 @@ cp "$INITIAL_MAKEFILE_OVERWRITE" "Makefile"
 cp "$INITIAL_VALUES_SECRET_TEMPLATE_OVERWRITE" "values-secret.yaml.template"
 
 # Don't create values-global.yaml, values-prod.yaml (should be created)
-# Don't create Makefile-pattern, pattern.sh (should be created/overwritten)
+# Don't create Makefile-common, pattern.sh (should be created/overwritten)
 
 test_header "Running patternizer init --with-secrets on mixed repository..."
 "$PATTERNIZER_BINARY" init --with-secrets
@@ -427,7 +427,7 @@ test_header "Verifying mixed overwrite behavior..."
 check_file_exists "values-global.yaml" "values-global.yaml created when missing"
 check_file_exists "values-prod.yaml" "values-prod.yaml created when missing"
 
-compare_files "$EXPECTED_MAKEFILE_PATTERN" "Makefile-pattern" "Makefile-pattern created with correct content"
+compare_files "$EXPECTED_MAKEFILE_COMMON" "Makefile-common" "Makefile-common created with correct content"
 
 compare_files "$EXPECTED_PATTERN_SH" "pattern.sh" "pattern.sh created with correct content"
 
