@@ -2,4 +2,4 @@
 # This Makefile includes the common pattern targets from Makefile-pattern
 # You can add custom targets above or below the include line
 
-include Makefile-pattern
+include Makefile-common
