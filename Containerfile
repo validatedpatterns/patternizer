@@ -1,5 +1,6 @@
 ARG GO_VERSION=1.24-alpine
 ARG ALPINE_VERSION=latest
+ARG GOARCH=amd64
 
 # Build stage
 FROM docker.io/library/golang:${GO_VERSION} AS builder
@@ -10,7 +11,7 @@ COPY src/go.mod src/go.sum .
 RUN go mod download
 
 COPY src/ .
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o patternizer .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${GOARCH} go build -a -installsuffix cgo -o patternizer .
 
 # Runtime stage
 FROM docker.io/library/alpine:${ALPINE_VERSION}

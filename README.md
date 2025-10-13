@@ -1,7 +1,8 @@
 # Patternizer
 
+![Version: 0.1.1](https://img.shields.io/badge/Version-0.1.1-informational?style=flat-square)
 [![Quay Repository](https://img.shields.io/badge/Quay.io-patternizer-blue?logo=quay)](https://quay.io/repository/validatedpatterns/patternizer)
-[![CI Pipeline](https://github.com/validatedpatterns/patternizer/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/validatedpatterns/patternizer/actions/workflows/ci.yaml)
+[![CI Pipeline](https://github.com/validatedpatterns/patternizer/actions/workflows/lint-test.yaml/badge.svg?branch=main)](https://github.com/validatedpatterns/patternizer/actions/workflows/lint-test.yaml)
 
 **Patternizer** is a command-line tool that bootstraps a Git repository containing Helm charts into a ready-to-use Validated Pattern. It automatically generates the necessary scaffolding, configuration files, and utility scripts, so you can get your pattern up and running in minutes.
 
@@ -29,12 +30,12 @@
 
 ## Features
 
-  - 🚀 **CLI-first design** with intuitive commands and help system
-  - 📦 **Container-native** for consistent execution across all environments
-  - 🔍 **Auto-discovery** of Helm charts and Git repository metadata
-  - 🔐 **Optional secrets integration** with Vault and External Secrets
-  - 🏗️ **Makefile-driven** utility scripts for easy pattern management
-  - ♻️ **Upgrade command** to refresh existing pattern repositories to the latest common structure
+- 🚀 **CLI-first design** with intuitive commands and help system
+- 📦 **Container-native** for consistent execution across all environments
+- 🔍 **Auto-discovery** of Helm charts and Git repository metadata
+- 🔐 **Optional secrets integration** with Vault and External Secrets
+- 🏗️ **Makefile-driven** utility scripts for easy pattern management
+- ♻️ **Upgrade command** to refresh existing pattern repositories to the latest common structure
 
 ## Quick Start
 
@@ -42,8 +43,8 @@ This guide assumes you have a Git repository containing one or more Helm charts.
 
 **Prerequisites:**
 
-  * Podman or Docker
-  * A Git repository you want to convert into a pattern
+- Podman or Docker
+- A Git repository you want to convert into a pattern
 
 Navigate to your repository's root directory and run the initialization command:
 
@@ -131,9 +132,9 @@ What upgrade does:
 
 You can start simple and add secrets management later.
 
-  * By default, `patternizer init` disables secret loading.
-  * To add secrets scaffolding, run `patternizer init --with-secrets` at any time. This will update your configuration to enable secrets.
-  * **Important:** This action is not easily reversible. We recommend committing your work to Git *before* adding secrets support.
+- By default, `patternizer init` disables secret loading.
+- To add secrets scaffolding, run `patternizer init --with-secrets` at any time. This will update your configuration to enable secrets.
+- **Important:** This action is not easily reversible. We recommend committing your work to Git _before_ adding secrets support.
 
 For more details on how secrets work in the framework, see the [Secrets Management Documentation](https://validatedpatterns.io/learn/secrets-management-in-the-validated-patterns-framework/).
 
@@ -141,16 +142,16 @@ For more details on how secrets work in the framework, see the [Secrets Manageme
 
 Running `patternizer init` creates the following:
 
-  * `values-global.yaml`: Global pattern configuration.
-  * `values-<cluster_group>.yaml`: Cluster group-specific values.
-  * `pattern.sh`: A utility script for common pattern operations (`install`, `upgrade`, etc.).
-  * `Makefile`: A simple Makefile that includes `Makefile-common`.
-  * `Makefile-common`: The core Makefile with all pattern-related targets.
+- `values-global.yaml`: Global pattern configuration.
+- `values-<cluster_group>.yaml`: Cluster group-specific values.
+- `pattern.sh`: A utility script for common pattern operations (`install`, `upgrade`, etc.).
+- `Makefile`: A simple Makefile that includes `Makefile-common`.
+- `Makefile-common`: The core Makefile with all pattern-related targets.
 
 Using the `--with-secrets` flag additionally creates:
 
-  * `values-secret.yaml.template`: A template for defining your secrets.
-  * It also updates `values-global.yaml` to set `global.secretLoader.disabled: false` and adds Vault and External Secrets Operator to the cluster group values.
+- `values-secret.yaml.template`: A template for defining your secrets.
+- It also updates `values-global.yaml` to set `global.secretLoader.disabled: false` and adds Vault and External Secrets Operator to the cluster group values.
 
 ## Development & Contributing
 
@@ -158,10 +159,10 @@ This section is for developers who want to contribute to the Patternizer project
 
 ### Prerequisites
 
-  * Go (see `go.mod` for version)
-  * Podman or Docker
-  * Git
-  * Make
+- Go (see `go.mod` for version)
+- Podman or Docker
+- Git
+- Make
 
 ### Local Development Workflow
 
@@ -183,31 +184,32 @@ make ci
 
 The `Makefile` is the single source of truth for all development and CI tasks.
 
-  * `make help`: Show all available targets.
-  * `make check`: Quick feedback loop (format, vet, build, unit tests).
-  * `make build`: Build the `patternizer` binary.
-  * `make test`: Run all tests (unit and integration).
-  * `make test-unit`: Run unit tests only.
-  * `make test-integration`: Run integration tests only.
-  * `make lint`: Run all code quality checks.
-  * `make local-container-build`: Build the container image locally.
+- `make help`: Show all available targets.
+- `make check`: Quick feedback loop (format, vet, build, unit tests).
+- `make build`: Build the `patternizer` binary.
+- `make test`: Run all tests (unit and integration).
+- `make test-unit`: Run unit tests only.
+- `make test-integration`: Run integration tests only.
+- `make lint`: Run all code quality checks.
+- `make amd64`: Build the amd64 container image locally.
+- `make arm64`: Build the arm64 container image locally.
 
 ### Testing Strategy
 
 Patternizer has a comprehensive test suite to ensure stability and correctness.
 
-  * **Unit Tests:** Located alongside the code they test (e.g., `src/internal/helm/helm_test.go`), these tests cover individual functions and packages in isolation. They validate Helm chart detection, Git URL parsing, and YAML processing logic.
-  * **Integration Tests:** The integration test suite (`test/integration_test.sh`) validates the end-to-end CLI workflow against a real Git repository. Key scenarios include:
-    1.  **Basic Init:** Validates default file generation without secrets.
-    2.  **Init with Secrets:** Ensures secrets-related applications and files are correctly added.
-    3.  **Configuration Preservation:** Verifies that existing custom values are preserved when the tool is re-run.
-    4.  **Sequential Execution:** Tests running `init` and then `init --with-secrets` to ensure a clean upgrade.
-    5.  **Selective File Overwriting:** Confirms that running `init` on a repository with pre-existing custom files correctly **merges YAML configurations**, preserves user-modified files (like `Makefile` and `values-secret.yaml.template`), and only overwrites essential, generated scripts (`pattern.sh`, `Makefile-common`).
-    6.  **Mixed State Handling:** Validates that the tool correctly initializes a partially-configured repository, **creating files that are missing** while leaving existing ones untouched.
-    7.  **Upgrade (no replace):** Removes legacy `common/` and `pattern.sh` symlink, copies `Makefile-common`/`pattern.sh`, and injects `include Makefile-common` at the top of `Makefile` when missing.
-    8.  **Upgrade (include present):** Leaves the existing `Makefile` unchanged when it already contains `include Makefile-common` anywhere.
-    9.  **Upgrade with `--replace-makefile`:** Replaces `Makefile` with the default and refreshes common assets.
-    10. **Upgrade (no Makefile present):** Creates the default `Makefile` and refreshes common assets when a `Makefile` does not exist.
+- **Unit Tests:** Located alongside the code they test (e.g., `src/internal/helm/helm_test.go`), these tests cover individual functions and packages in isolation. They validate Helm chart detection, Git URL parsing, and YAML processing logic.
+- **Integration Tests:** The integration test suite (`test/integration_test.sh`) validates the end-to-end CLI workflow against a real Git repository. Key scenarios include:
+  1.  **Basic Init:** Validates default file generation without secrets.
+  2.  **Init with Secrets:** Ensures secrets-related applications and files are correctly added.
+  3.  **Configuration Preservation:** Verifies that existing custom values are preserved when the tool is re-run.
+  4.  **Sequential Execution:** Tests running `init` and then `init --with-secrets` to ensure a clean upgrade.
+  5.  **Selective File Overwriting:** Confirms that running `init` on a repository with pre-existing custom files correctly **merges YAML configurations**, preserves user-modified files (like `Makefile` and `values-secret.yaml.template`), and only overwrites essential, generated scripts (`pattern.sh`, `Makefile-common`).
+  6.  **Mixed State Handling:** Validates that the tool correctly initializes a partially-configured repository, **creating files that are missing** while leaving existing ones untouched.
+  7.  **Upgrade (no replace):** Removes legacy `common/` and `pattern.sh` symlink, copies `Makefile-common`/`pattern.sh`, and injects `include Makefile-common` at the top of `Makefile` when missing.
+  8.  **Upgrade (include present):** Leaves the existing `Makefile` unchanged when it already contains `include Makefile-common` anywhere.
+  9.  **Upgrade with `--replace-makefile`:** Replaces `Makefile` with the default and refreshes common assets.
+  10. **Upgrade (no Makefile present):** Creates the default `Makefile` and refreshes common assets when a `Makefile` does not exist.
 
 ### Architecture
 

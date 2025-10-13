@@ -1,13 +1,9 @@
-# Makefile for patternizer
-
-# Variables
-BINARY_NAME := patternizer
-GO_VERSION := 1.24
-GOLANGCI_LINT_VERSION := v2.1.6
-IMAGE_NAME := patternizer
-LOCAL_TAG := local
-SRC_DIR := src
-CONTAINER_ENGINE := podman
+# Container-related variables
+NAME := patternizer
+TAG := local
+CONTAINER ?= $(NAME):$(TAG)
+REGISTRY ?= localhost
+UPLOADREGISTRY ?= quay.io/validatedpatterns
 
 # Go-related variables
 GO_CMD := go
@@ -16,33 +12,33 @@ GO_TEST := $(GO_CMD) test
 GO_CLEAN := $(GO_CMD) clean
 GO_VET := $(GO_CMD) vet
 GO_FMT := gofmt
+GO_VERSION := 1.24
+GOLANGCI_LINT_VERSION := v2.1.6
+SRC_DIR := src
 
 # Default target
 .DEFAULT_GOAL := help
 
-# Help target
+##@ Help-related tasks
 .PHONY: help
-help: ## Show this help message
-	@echo "Available targets:"
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+help: ## Help
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^(\s|[a-zA-Z_0-9-])+:.*?##/ { printf "  \033[36m%-35s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
-# Build target
+##@ Go-related tasks
 .PHONY: build
 build: ## Build the patternizer binary
 	@echo "Building patternizer..."
-	cd $(SRC_DIR) && $(GO_BUILD) -v -o $(BINARY_NAME) .
-	@echo "Build complete: $(SRC_DIR)/$(BINARY_NAME)"
+	cd $(SRC_DIR) && $(GO_BUILD) -v -o $(NAME) .
+	@echo "Build complete: $(SRC_DIR)/$(NAME)"
 
-# Clean target
 .PHONY: clean
 clean: ## Clean build artifacts
 	@echo "Cleaning build artifacts..."
 	cd $(SRC_DIR) && $(GO_CLEAN)
-	rm -f $(SRC_DIR)/$(BINARY_NAME)
+	rm -f $(SRC_DIR)/$(NAME)
 	rm -f $(SRC_DIR)/coverage.out
 	@echo "Clean complete"
 
-# Install dependencies
 .PHONY: deps
 deps: ## Download and install Go dependencies
 	@echo "Installing dependencies..."
@@ -50,41 +46,34 @@ deps: ## Download and install Go dependencies
 	cd $(SRC_DIR) && $(GO_CMD) mod tidy
 	@echo "Dependencies installed"
 
-# Unit tests
 .PHONY: test-unit
 test-unit: ## Run unit tests
 	@echo "Running unit tests..."
 	cd $(SRC_DIR) && $(GO_TEST) -v ./...
 
-# Test with coverage
 .PHONY: test-coverage
 test-coverage: ## Run unit tests with coverage report
 	@echo "Running unit tests with coverage..."
 	cd $(SRC_DIR) && $(GO_TEST) ./... -coverprofile=coverage.out
 	cd $(SRC_DIR) && $(GO_CMD) tool cover -func=coverage.out
 
-# Shellcheck for integration test script
 .PHONY: shellcheck
 shellcheck: ## Run shellcheck on integration test script
 	@echo "Running shellcheck on integration test script..."
 	@podman run --pull always -v "$(PWD):/mnt:z" docker.io/koalaman/shellcheck:stable test/integration_test.sh
 	@echo "Shellcheck passed"
 
-# Integration tests
 .PHONY: test-integration
 test-integration: build shellcheck ## Run integration tests
 	@echo "Running integration tests..."
-	PATTERNIZER_BINARY=./$(SRC_DIR)/$(BINARY_NAME) ./test/integration_test.sh
+	PATTERNIZER_BINARY=./$(SRC_DIR)/$(NAME) ./test/integration_test.sh
 
-# All tests
 .PHONY: test
 test: test-unit test-integration ## Run all tests (unit + integration)
 
-# Lint target
 .PHONY: lint
 lint: lint-fmt lint-vet lint-golangci ## Run all linting checks
 
-# Format check
 .PHONY: lint-fmt
 lint-fmt: ## Check Go formatting
 	@echo "Checking Go formatting..."
@@ -95,14 +84,12 @@ lint-fmt: ## Check Go formatting
 	fi
 	@echo "Go formatting check passed"
 
-# Vet check
 .PHONY: lint-vet
 lint-vet: ## Run go vet
 	@echo "Running go vet..."
 	cd $(SRC_DIR) && $(GO_VET) ./...
 	@echo "Go vet passed"
 
-# golangci-lint check
 .PHONY: lint-golangci
 lint-golangci: ## Run golangci-lint
 	@echo "Running golangci-lint..."
@@ -113,25 +100,15 @@ lint-golangci: ## Run golangci-lint
 	cd $(SRC_DIR) && $$(go env GOPATH)/bin/golangci-lint run
 	@echo "golangci-lint passed"
 
-# Format code
 .PHONY: fmt
 fmt: ## Format Go code
 	@echo "Formatting Go code..."
 	cd $(SRC_DIR) && $(GO_FMT) -s -w .
 	@echo "Go code formatted"
 
-# Local container build
-.PHONY: local-container-build
-local-container-build: ## Build container image locally
-	@echo "Building container image..."
-	$(CONTAINER_ENGINE) build -t $(IMAGE_NAME):$(LOCAL_TAG) -f Containerfile .
-	@echo "Container image built: $(IMAGE_NAME):$(LOCAL_TAG)"
-
-# Full CI pipeline locally
 .PHONY: ci
 ci: lint build test ## Run the full CI pipeline locally
 
-# Development setup
 .PHONY: dev-setup
 dev-setup: deps ## Set up development environment
 	@echo "Setting up development environment..."
@@ -141,22 +118,52 @@ dev-setup: deps ## Set up development environment
 	fi
 	@echo "Development environment ready"
 
-# Version info
 .PHONY: version
 version: ## Show version information
 	@echo "Go version: $$(go version)"
 	@echo "Git commit: $$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')"
 	@echo "Build date: $$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-# Generate documentation
 .PHONY: docs
 docs: ## Generate Go documentation
 	@echo "Generating documentation..."
 	cd $(SRC_DIR) && $(GO_CMD) doc -all ./...
 
-# Quick check (fast feedback loop)
 .PHONY: check
 check: lint-fmt lint-vet build test-unit ## Quick check (format, vet, build, unit tests)
 
 .PHONY: all
 all: clean deps lint build test local-container-build ## Run everything
+
+##@ Conatiner-related tasks
+.PHONY: manifest
+manifest: ## creates the buildah manifest for multi-arch images
+	# The rm is needed due to bug https://www.github.com/containers/podman/issues/19757
+	buildah manifest rm "${REGISTRY}/${CONTAINER}" || /bin/true
+	buildah manifest create "${REGISTRY}/${CONTAINER}"
+
+.PHONY: amd64
+amd64: manifest podman-build-amd64 ## Build the container on amd64
+
+.PHONY: arm64
+arm64: manifest podman-build-arm64 ## Build the container on arm64
+
+.PHONY: podman-build
+podman-build: podman-build-amd64 podman-build-arm64 ## Build both amd64 and arm64
+
+.PHONY: podman-build-amd64
+podman-build-amd64: ## build the container in amd64
+	@echo "Building the patternizer amd64"
+	buildah bud --platform linux/amd64 --format docker -f Containerfile -t "${CONTAINER}-amd64"
+	buildah manifest add --arch=amd64 "${REGISTRY}/${CONTAINER}" "${REGISTRY}/${CONTAINER}-amd64"
+
+.PHONY: podman-build-arm64
+podman-build-arm64: ## build the container in arm64
+	@echo "Building the patternizer arm64"
+	buildah bud --platform linux/arm64 --build-arg GOARCH="arm64" --format docker -f Containerfile -t "${CONTAINER}-arm64"
+	buildah manifest add --arch=arm64 "${REGISTRY}/${CONTAINER}" "${REGISTRY}/${CONTAINER}-arm64"
+
+.PHONY: upload
+upload: ## Uploads the container to quay.io/validatedpatterns/${CONTAINER}
+	@echo "Uploading the ${REGISTRY}/${CONTAINER} container to ${UPLOADREGISTRY}/${CONTAINER}"
+	buildah manifest push --all "${REGISTRY}/${CONTAINER}" "docker://${UPLOADREGISTRY}/${CONTAINER}"
