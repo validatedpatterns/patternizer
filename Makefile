@@ -1,6 +1,6 @@
 # Container-related variables
 NAME := patternizer
-TAG := local
+TAG := latest
 CONTAINER ?= $(NAME):$(TAG)
 REGISTRY ?= localhost
 UPLOADREGISTRY ?= quay.io/validatedpatterns

@@ -2,7 +2,7 @@
 
 ![Version: 0.1.1](https://img.shields.io/badge/Version-0.1.1-informational?style=flat-square)
 [![Quay Repository](https://img.shields.io/badge/Quay.io-patternizer-blue?logo=quay)](https://quay.io/repository/validatedpatterns/patternizer)
-[![CI Pipeline](https://github.com/validatedpatterns/patternizer/actions/workflows/lint-test.yaml/badge.svg?branch=main)](https://github.com/validatedpatterns/patternizer/actions/workflows/lint-test.yaml)
+[![CI Pipeline](https://github.com/validatedpatterns/patternizer/actions/workflows/build-push.yaml/badge.svg?branch=main)](https://github.com/validatedpatterns/patternizer/actions/workflows/build-push.yaml)
 
 **Patternizer** is a command-line tool that bootstraps a Git repository containing Helm charts into a ready-to-use Validated Pattern. It automatically generates the necessary scaffolding, configuration files, and utility scripts, so you can get your pattern up and running in minutes.
 
