@@ -133,7 +133,7 @@ docs: ## Generate Go documentation
 check: lint-fmt lint-vet build test-unit ## Quick check (format, vet, build, unit tests)
 
 .PHONY: all
-all: clean deps lint build test local-container-build ## Run everything
+all: clean deps lint build test podman-build ## Run everything
 
 ##@ Conatiner-related tasks
 .PHONY: manifest
@@ -149,7 +149,7 @@ amd64: manifest podman-build-amd64 ## Build the container on amd64
 arm64: manifest podman-build-arm64 ## Build the container on arm64
 
 .PHONY: podman-build
-podman-build: podman-build-amd64 podman-build-arm64 ## Build both amd64 and arm64
+podman-build: manifest podman-build-amd64 podman-build-arm64 ## Build both amd64 and arm64
 
 .PHONY: podman-build-amd64
 podman-build-amd64: ## build the container in amd64
