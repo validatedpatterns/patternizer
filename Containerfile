@@ -1,9 +1,8 @@
-ARG GO_VERSION=1.24-alpine
-ARG ALPINE_VERSION=latest
+ARG GO_VERSION=1.24
 ARG GOARCH=amd64
 
 # Build stage
-FROM docker.io/library/golang:${GO_VERSION} AS builder
+FROM registry.access.redhat.com/ubi10/go-toolset:${GO_VERSION} AS builder
 
 WORKDIR /build
 
@@ -14,9 +13,9 @@ COPY src/ .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${GOARCH} go build -a -installsuffix cgo -o patternizer .
 
 # Runtime stage
-FROM docker.io/library/alpine:${ALPINE_VERSION}
+FROM registry.access.redhat.com/ubi10/ubi-minimal:10.0
 
-RUN apk --no-cache add git
+RUN microdnf --disableplugin=subscription-manager install -y git
 
 COPY --from=builder /build/patternizer /usr/local/bin/patternizer
 
