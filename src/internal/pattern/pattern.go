@@ -7,6 +7,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/dminnear-rh/patternizer/internal/fileutils"
 	"github.com/dminnear-rh/patternizer/internal/types"
 )
 
@@ -54,12 +55,8 @@ func ProcessGlobalValues(patternName, repoRoot string, withSecrets bool) (actual
 	// If withSecrets is false, we want secretLoader to be disabled (disabled = true)
 	values.Global.SecretLoader.Disabled = !withSecrets
 
-	// Write back the merged values
-	finalYamlBytes, err := yaml.Marshal(values)
-	if err != nil {
-		return "", "", fmt.Errorf("failed to marshal global values: %w", err)
-	}
-	if err = os.WriteFile(globalValuesPath, finalYamlBytes, 0o644); err != nil {
+	// Write back the merged values with 2-space indentation
+	if err = fileutils.WriteYAMLWithIndent(values, globalValuesPath); err != nil {
 		return "", "", fmt.Errorf("failed to write to %s: %w", globalValuesPath, err)
 	}
 
@@ -88,12 +85,8 @@ func ProcessClusterGroupValues(patternName, clusterGroupName, repoRoot string, c
 		mergeClusterGroupValues(values, &existingValues)
 	}
 
-	// Write back the merged values
-	finalYamlBytes, err := yaml.Marshal(values)
-	if err != nil {
-		return fmt.Errorf("failed to marshal cluster group values: %w", err)
-	}
-	if err = os.WriteFile(clusterGroupValuesPath, finalYamlBytes, 0o644); err != nil {
+	// Write back the merged values with 2-space indentation
+	if err = fileutils.WriteYAMLWithIndent(values, clusterGroupValuesPath); err != nil {
 		return fmt.Errorf("failed to write to %s: %w", clusterGroupValuesPath, err)
 	}
 

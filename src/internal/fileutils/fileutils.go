@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 // CopyFile copies a file from src to dst. If dst already exists, it will be overwritten.
@@ -129,4 +131,31 @@ func PrependLineToFile(filePath, line string) error {
 
 	newContents := []byte(line + "\n" + string(data))
 	return os.WriteFile(filePath, newContents, mode)
+}
+
+// WriteYAMLWithIndent marshals the given data structure to YAML and writes it to a file
+// with 2-space indentation. This ensures consistency with prettier formatting.
+func WriteYAMLWithIndent(data interface{}, filePath string) error {
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to create file %s: %w", filePath, err)
+	}
+	defer file.Close()
+
+	encoder := yaml.NewEncoder(file)
+	defer encoder.Close()
+
+	// Set indentation to 2 spaces instead of the default 4
+	encoder.SetIndent(2)
+
+	if err := encoder.Encode(data); err != nil {
+		return fmt.Errorf("failed to encode YAML to %s: %w", filePath, err)
+	}
+
+	// Set file permissions to 0644
+	if err := os.Chmod(filePath, 0o644); err != nil {
+		return fmt.Errorf("failed to set permissions on %s: %w", filePath, err)
+	}
+
+	return nil
 }

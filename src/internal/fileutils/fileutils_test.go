@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 func writeFileWithMode(t *testing.T, path, content string, mode os.FileMode) {
@@ -219,5 +221,80 @@ func TestPrependLineToFile_PrependsAndPreservesMode(t *testing.T) {
 	}
 	if info.Mode().Perm() != mode.Perm() {
 		t.Fatalf("mode not preserved: got %v want %v", info.Mode().Perm(), mode.Perm())
+	}
+}
+
+func TestWriteYAMLWithIndent_Uses2SpaceIndentation(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "test.yaml")
+
+	// Create a nested structure to verify indentation
+	type NestedStruct struct {
+		Field1 string `yaml:"field1"`
+		Field2 int    `yaml:"field2"`
+	}
+	type TestStruct struct {
+		Name   string       `yaml:"name"`
+		Nested NestedStruct `yaml:"nested"`
+		Items  []string     `yaml:"items"`
+	}
+
+	data := TestStruct{
+		Name: "test",
+		Nested: NestedStruct{
+			Field1: "value1",
+			Field2: 42,
+		},
+		Items: []string{"item1", "item2", "item3"},
+	}
+
+	// Write the YAML with our function
+	if err := WriteYAMLWithIndent(data, p); err != nil {
+		t.Fatalf("WriteYAMLWithIndent failed: %v", err)
+	}
+
+	// Read the file and verify indentation
+	content, err := os.ReadFile(p)
+	if err != nil {
+		t.Fatalf("read failed: %v", err)
+	}
+
+	// Verify 2-space indentation by checking the content
+	// The nested fields should be indented with 2 spaces, not 4
+	contentStr := string(content)
+	if !strings.Contains(contentStr, "  field1: value1") {
+		t.Fatalf("expected 2-space indentation for nested.field1, got:\n%s", contentStr)
+	}
+	if !strings.Contains(contentStr, "  field2: 42") {
+		t.Fatalf("expected 2-space indentation for nested.field2, got:\n%s", contentStr)
+	}
+	// Verify it's not 4-space indentation
+	if strings.Contains(contentStr, "    field1") || strings.Contains(contentStr, "    field2") {
+		t.Fatalf("unexpected 4-space indentation found:\n%s", contentStr)
+	}
+
+	// Verify the file can be unmarshaled back correctly
+	var decoded TestStruct
+	if err := yaml.Unmarshal(content, &decoded); err != nil {
+		t.Fatalf("failed to unmarshal written YAML: %v", err)
+	}
+	if decoded.Name != data.Name {
+		t.Fatalf("name mismatch: got %q want %q", decoded.Name, data.Name)
+	}
+	if decoded.Nested.Field1 != data.Nested.Field1 {
+		t.Fatalf("nested.field1 mismatch: got %q want %q", decoded.Nested.Field1, data.Nested.Field1)
+	}
+	if decoded.Nested.Field2 != data.Nested.Field2 {
+		t.Fatalf("nested.field2 mismatch: got %d want %d", decoded.Nested.Field2, data.Nested.Field2)
+	}
+
+	// Verify file permissions
+	info, err := os.Stat(p)
+	if err != nil {
+		t.Fatalf("stat failed: %v", err)
+	}
+	expectedMode := os.FileMode(0o644)
+	if info.Mode().Perm() != expectedMode.Perm() {
+		t.Fatalf("mode mismatch: got %v want %v", info.Mode().Perm(), expectedMode.Perm())
 	}
 }
