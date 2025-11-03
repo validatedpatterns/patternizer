@@ -59,11 +59,6 @@ func TestNewDefaultValuesClusterGroup(t *testing.T) {
 		t.Errorf("Expected %d namespaces, got %d", len(expectedNamespaces), len(values.ClusterGroup.Namespaces))
 	}
 
-	expectedProjects := []string{"test-pattern"}
-	if len(values.ClusterGroup.Projects) != len(expectedProjects) {
-		t.Errorf("Expected %d projects, got %d", len(expectedProjects), len(values.ClusterGroup.Projects))
-	}
-
 	// Test with secrets
 	valuesWithSecrets := types.NewDefaultValuesClusterGroup("test-pattern", "test-group", []string{"charts/app1"}, true)
 

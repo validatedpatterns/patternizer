@@ -66,7 +66,7 @@ func NewNamespaceEntry(namespace string) NamespaceEntry {
 type Application struct {
 	Name         string                 `yaml:"name"`
 	Namespace    string                 `yaml:"namespace"`
-	Project      string                 `yaml:"project"`
+	Project      string                 `yaml:"project,omitempty"`
 	Path         string                 `yaml:"path,omitempty"`
 	Chart        string                 `yaml:"chart,omitempty"`
 	ChartVersion string                 `yaml:"chartVersion,omitempty"`
@@ -87,7 +87,7 @@ type ClusterGroup struct {
 	Name          string                  `yaml:"name"`
 	IsHubCluster  bool                    `yaml:"isHubCluster,omitempty"`
 	Namespaces    []NamespaceEntry        `yaml:"namespaces"`
-	Projects      []string                `yaml:"projects"`
+	Projects      []string                `yaml:"projects,omitempty"`
 	Subscriptions map[string]Subscription `yaml:"subscriptions"`
 	Applications  map[string]Application  `yaml:"applications"`
 	OtherFields   map[string]interface{}  `yaml:",inline"`
@@ -103,26 +103,19 @@ type ValuesClusterGroup struct {
 // It conditionally includes secrets-related resources based on the useSecrets flag.
 func NewDefaultValuesClusterGroup(patternName, clusterGroupName string, chartPaths []string, useSecrets bool) *ValuesClusterGroup {
 	namespaces := []NamespaceEntry{NewNamespaceEntry(patternName)}
-	projects := []string{patternName}
 	applications := make(map[string]Application)
-
-	if useSecrets {
-		projects = append(projects, clusterGroupName)
-	}
 
 	if useSecrets {
 		namespaces = append(namespaces, NewNamespaceEntry("vault"), NewNamespaceEntry("golang-external-secrets"))
 		applications["vault"] = Application{
 			Name:         "vault",
 			Namespace:    "vault",
-			Project:      clusterGroupName,
 			Chart:        "hashicorp-vault",
 			ChartVersion: "0.1.*",
 		}
 		applications["golang-external-secrets"] = Application{
 			Name:         "golang-external-secrets",
 			Namespace:    "golang-external-secrets",
-			Project:      clusterGroupName,
 			Chart:        "golang-external-secrets",
 			ChartVersion: "0.1.*",
 		}
@@ -133,7 +126,6 @@ func NewDefaultValuesClusterGroup(patternName, clusterGroupName string, chartPat
 		app := Application{
 			Name:      chartName,
 			Namespace: patternName,
-			Project:   patternName,
 			Path:      path,
 		}
 		applications[chartName] = app
@@ -143,7 +135,6 @@ func NewDefaultValuesClusterGroup(patternName, clusterGroupName string, chartPat
 		ClusterGroup: ClusterGroup{
 			Name:          clusterGroupName,
 			Namespaces:    namespaces,
-			Projects:      projects,
 			Subscriptions: make(map[string]Subscription),
 			Applications:  applications,
 			OtherFields:   make(map[string]interface{}),
