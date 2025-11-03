@@ -1,6 +1,6 @@
 # Patternizer
 
-![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square)
+![Version: 0.2.1](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square)
 [![Quay Repository](https://img.shields.io/badge/Quay.io-patternizer-blue?logo=quay)](https://quay.io/repository/validatedpatterns/patternizer)
 [![CI Pipeline](https://github.com/validatedpatterns/patternizer/actions/workflows/build-push.yaml/badge.svg?branch=main)](https://github.com/validatedpatterns/patternizer/actions/workflows/build-push.yaml)
 
@@ -50,7 +50,7 @@ Navigate to your repository's root directory and run the initialization command:
 
 ```bash
 # In the root of your pattern-repo
-podman run -v "$PWD:/repo:z" quay.io/validatedpatterns/patternizer init
+podman run -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer init
 ```
 
 This single command will generate all the necessary files to turn your repository into a Validated Pattern.
@@ -68,7 +68,7 @@ This single command will generate all the necessary files to turn your repositor
 2.  **Initialize the pattern using Patternizer:**
 
     ```bash
-    podman run -v "$PWD:/repo:z" quay.io/validatedpatterns/patternizer init
+    podman run -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer init
     ```
 
 3.  **Review, commit, and push the generated files:**
@@ -90,18 +90,18 @@ This single command will generate all the necessary files to turn your repositor
 
 ### Container Usage (Recommended)
 
-Using the prebuilt container is the easiest way to run Patternizer, as it requires no local installation. The `-v "$PWD:/repo:z"` flag mounts your current directory into the container's `/repo` workspace.
+Using the prebuilt container is the easiest way to run Patternizer, as it requires no local installation. The `-v "$PWD:$PWD:z" -w "$PWD"` flag mounts your current directory into the container's `/repo` workspace.
 
 #### **Initialize without secrets:**
 
 ```bash
-podman run -v "$PWD:/repo:z" quay.io/validatedpatterns/patternizer init
+podman run -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer init
 ```
 
 #### **Initialize with secrets support:**
 
 ```bash
-podman run -v "$PWD:/repo:z" quay.io/validatedpatterns/patternizer init --with-secrets
+podman run -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer init --with-secrets
 ```
 
 #### **Upgrade an existing pattern repository:**
@@ -110,10 +110,10 @@ Use this to migrate or refresh an existing pattern repo to the latest common str
 
 ```bash
 # Refresh common assets, keep your Makefile unless it lacks the include
-podman run -v "$PWD:/repo:z" quay.io/validatedpatterns/patternizer upgrade
+podman run -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer upgrade
 
 # Replace your Makefile with the default from Patternizer
-podman run -v "$PWD:/repo:z" quay.io/validatedpatterns/patternizer upgrade --replace-makefile
+podman run -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer upgrade --replace-makefile
 ```
 
 What upgrade does:
