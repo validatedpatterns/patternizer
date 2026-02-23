@@ -89,12 +89,14 @@ INITIAL_VALUES_CUSTOM_CLUSTER_OVERWRITE="$REPO_ROOT/test/initial_values_custom_c
 INITIAL_VALUES_GLOBAL_CUSTOM="$REPO_ROOT/test/initial_values_global_custom.yaml"
 INITIAL_VALUES_GLOBAL_OVERWRITE="$REPO_ROOT/test/initial_values_global_overwrite.yaml"
 INITIAL_VALUES_SECRET_TEMPLATE_OVERWRITE="$REPO_ROOT/test/initial_values_secret_template_overwrite.yaml"
+INITIAL_ANSIBLE_CFG_OVERWRITE="$REPO_ROOT/test/initial_ansible_cfg_overwrite"
 
 # Set paths for expected resource files
 EXPECTED_MAKEFILE="$PATTERNIZER_RESOURCES_DIR/Makefile"
 EXPECTED_MAKEFILE_COMMON="$PATTERNIZER_RESOURCES_DIR/Makefile-common"
 EXPECTED_PATTERN_SH="$PATTERNIZER_RESOURCES_DIR/pattern.sh"
 EXPECTED_VALUES_SECRET_TEMPLATE="$PATTERNIZER_RESOURCES_DIR/values-secret.yaml.template"
+EXPECTED_ANSIBLE_CFG="$PATTERNIZER_RESOURCES_DIR/ansible.cfg"
 
 # Check if patternizer binary exists and is executable
 if [ ! -x "$PATTERNIZER_BINARY" ]; then
@@ -249,6 +251,9 @@ compare_files "$EXPECTED_MAKEFILE" "Makefile" "Makefile has expected content (in
 # Test 1.5: Check Makefile-common has exact expected content
 compare_files "$EXPECTED_MAKEFILE_COMMON" "Makefile-common" "Makefile-common has expected content (init without secrets)"
 
+# Test 1.6: Check ansible.cfg has exact expected content
+compare_files "$EXPECTED_ANSIBLE_CFG" "ansible.cfg" "ansible.cfg has expected content (init without secrets)"
+
 test_pass "=== Test 1: Basic initialization PASSED ==="
 
 #
@@ -283,6 +288,9 @@ compare_files "$EXPECTED_MAKEFILE" "Makefile" "Makefile has expected content (in
 
 # Test 2.6: Check Makefile-common has exact expected content
 compare_files "$EXPECTED_MAKEFILE_COMMON" "Makefile-common" "Makefile-common has expected content (init with secrets)"
+
+# Test 2.7: Check ansible.cfg has exact expected content
+compare_files "$EXPECTED_ANSIBLE_CFG" "ansible.cfg" "ansible.cfg has expected content (init with secrets)"
 
 test_pass "=== Test 2: Initialization with secrets PASSED ==="
 
@@ -322,6 +330,9 @@ compare_files "$EXPECTED_MAKEFILE" "Makefile" "Makefile has expected content (cu
 # Test 3.6: Check Makefile-common has exact expected content
 compare_files "$EXPECTED_MAKEFILE_COMMON" "Makefile-common" "Makefile-common has expected content (custom names with secrets)"
 
+# Test 3.7: Check ansible.cfg has exact expected content
+compare_files "$EXPECTED_ANSIBLE_CFG" "ansible.cfg" "ansible.cfg has expected content (custom names with secrets)"
+
 test_pass "=== Test 3: Custom pattern and cluster group names (with secrets) PASSED ==="
 
 #
@@ -360,6 +371,10 @@ compare_files "$EXPECTED_MAKEFILE" "Makefile" "Makefile has expected content (se
 # Test 4.6: Check Makefile-common has exact expected content
 compare_files "$EXPECTED_MAKEFILE_COMMON" "Makefile-common" "Makefile-common has expected content (sequential execution)"
 
+# Test 4.7: Check ansible.cfg has exact expected content
+compare_files "$EXPECTED_ANSIBLE_CFG" "ansible.cfg" "ansible.cfg has expected content (sequential execution)"
+
+
 test_pass "=== Test 4: Sequential execution PASSED ==="
 
 #
@@ -376,6 +391,7 @@ cp "$INITIAL_MAKEFILE_OVERWRITE" "Makefile"
 cp "$INITIAL_MAKEFILE_PATTERN_OVERWRITE" "Makefile-common"
 cp "$INITIAL_PATTERN_SH_OVERWRITE" "pattern.sh"
 cp "$INITIAL_VALUES_SECRET_TEMPLATE_OVERWRITE" "values-secret.yaml.template"
+cp "$INITIAL_ANSIBLE_CFG_OVERWRITE" "ansible.cfg"
 
 # Make pattern.sh executable to match real scenarios
 chmod +x "pattern.sh"
@@ -410,6 +426,10 @@ fi
 # Test 5.6: values-secret.yaml.template should NOT be overwritten
 compare_files "$INITIAL_VALUES_SECRET_TEMPLATE_OVERWRITE" "values-secret.yaml.template" "values-secret.yaml.template was not overwritten (content preserved)"
 
+# Test 5.7: ansible.cfg SHOULD be overwritten with exact expected content
+compare_files "$EXPECTED_ANSIBLE_CFG" "ansible.cfg" "ansible.cfg was overwritten with correct content"
+
+
 test_pass "=== Test 5: File overwrite behavior PASSED ==="
 
 #
@@ -440,6 +460,8 @@ check_file_exists "values-prod.yaml" "values-prod.yaml created when missing"
 compare_files "$EXPECTED_MAKEFILE_COMMON" "Makefile-common" "Makefile-common created with correct content"
 
 compare_files "$EXPECTED_PATTERN_SH" "pattern.sh" "pattern.sh created with correct content"
+
+compare_files "$EXPECTED_ANSIBLE_CFG" "ansible.cfg" "ansible.cfg created with correct content"
 
 # Test 6.2: Files that should be preserved
 compare_files "$INITIAL_MAKEFILE_OVERWRITE" "Makefile" "Existing Makefile preserved in mixed scenario"
@@ -484,6 +506,7 @@ fi
 # Verify pattern.sh and Makefile-common contents
 compare_files "$EXPECTED_PATTERN_SH" "pattern.sh" "pattern.sh copied during upgrade"
 compare_files "$EXPECTED_MAKEFILE_COMMON" "Makefile-common" "Makefile-common copied during upgrade"
+compare_files "$EXPECTED_ANSIBLE_CFG" "ansible.cfg" "ansible.cfg copied during upgrade"
 
 # Verify Makefile first line and content
 EXPECTED_UPGRADE_MF=$(mktemp)

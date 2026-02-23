@@ -47,6 +47,11 @@ func runUpgrade(replaceMakefile bool) error {
 		return fmt.Errorf("error copying Makefile-common: %w", err)
 	}
 
+	// Copy copy ansible.cfg
+	if err := fileutils.CopyFile(filepath.Join(resourcesDir, "ansible.cfg"), filepath.Join(repoRoot, "ansible.cfg")); err != nil {
+		return fmt.Errorf("error copying ansible.cfg: %w", err)
+	}
+
 	// Makefile handling
 	makefileSrc := filepath.Join(resourcesDir, "Makefile")
 	makefileDst := filepath.Join(repoRoot, "Makefile")

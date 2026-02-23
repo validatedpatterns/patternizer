@@ -47,6 +47,13 @@ func runInit(withSecrets bool) error {
 		return fmt.Errorf("error copying pattern.sh: %w", err)
 	}
 
+	// Always copy ansible.cfg to the pattern repo
+	ansibleCfgSrc := filepath.Join(resourcesDir, "ansible.cfg")
+	ansibleCfgDst := filepath.Join(repoRoot, "ansible.cfg")
+	if err := fileutils.CopyFile(ansibleCfgSrc, ansibleCfgDst); err != nil {
+		return fmt.Errorf("error copying ansible.cfg: %w", err)
+	}
+
 	// Always copy Makefile-common to the pattern repo
 	makefilePatternSrc := filepath.Join(resourcesDir, "Makefile-common")
 	makefilePatternDst := filepath.Join(repoRoot, "Makefile-common")
