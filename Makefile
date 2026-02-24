@@ -14,6 +14,7 @@ GO_VET := $(GO_CMD) vet
 GO_FMT := gofmt
 GO_VERSION := 1.24
 GOLANGCI_LINT_VERSION := v2.1.6
+GINKGO_VERSION := v2.28.1
 SRC_DIR := src
 
 # Default target
@@ -49,7 +50,7 @@ deps: ## Download and install Go dependencies
 .PHONY: test-unit
 test-unit: ## Run unit tests
 	@echo "Running unit tests..."
-	cd $(SRC_DIR) && $(GO_TEST) -v ./...
+	cd $(SRC_DIR) && $(GO_TEST) -v --args --ginkgo.v ./...
 
 .PHONY: test-coverage
 test-coverage: ## Run unit tests with coverage report
@@ -115,6 +116,10 @@ dev-setup: deps ## Set up development environment
 	@if ! command -v golangci-lint >/dev/null 2>&1; then \
 		echo "Installing golangci-lint..."; \
 		curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$(go env GOPATH)/bin $(GOLANGCI_LINT_VERSION); \
+	fi
+	@if ! command -v ginkgo >/dev/null 2>&1; then \
+		echo "Installing ginkgo CLI..."; \
+		go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION); \
 	fi
 	@echo "Development environment ready"
 

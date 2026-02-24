@@ -95,13 +95,13 @@ Using the prebuilt container is the easiest way to run Patternizer, as it requir
 #### **Initialize without secrets:**
 
 ```bash
-podman run -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer init
+podman run --pull=newer -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer init
 ```
 
 #### **Initialize with secrets support:**
 
 ```bash
-podman run -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer init --with-secrets
+podman run --pull=newer -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer init --with-secrets
 ```
 
 #### **Upgrade an existing pattern repository:**
@@ -110,10 +110,10 @@ Use this to migrate or refresh an existing pattern repo to the latest common str
 
 ```bash
 # Refresh common assets, keep your Makefile unless it lacks the include
-podman run -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer upgrade
+podman run --pull=newer -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer upgrade
 
 # Replace your Makefile with the default from Patternizer
-podman run -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer upgrade --replace-makefile
+podman run --pull=newer -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer upgrade --replace-makefile
 ```
 
 What upgrade does:
