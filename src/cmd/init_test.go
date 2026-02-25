@@ -29,16 +29,8 @@ var _ = Describe("patternizer init", func() {
 			os.RemoveAll(tempDir)
 		})
 
-		It("should create the pattern.sh script", func() {
-			verifyPattenShCopied(tempDir)
-		})
-
-		It("should create the common Makefile", func() {
-			verifyMakefileCommonCopied(tempDir)
-		})
-
-		It("should create the Makefile for the pattern", func() {
-			verifyMakefileCopied(tempDir)
+		It("should copy the common pattern scaffold files", func() {
+			verifyScaffoldFilesCopied(tempDir)
 		})
 
 		It("should create an appropriate global values file", func() {
@@ -89,16 +81,8 @@ var _ = Describe("patternizer init", func() {
 			os.RemoveAll(tempDir)
 		})
 
-		It("should create the pattern.sh script", func() {
-			verifyPattenShCopied(tempDir)
-		})
-
-		It("should create the common Makefile", func() {
-			verifyMakefileCommonCopied(tempDir)
-		})
-
-		It("should create the Makefile for the pattern", func() {
-			verifyMakefileCopied(tempDir)
+		It("should copy the common pattern scaffold files", func() {
+			verifyScaffoldFilesCopied(tempDir)
 		})
 
 		It("should create an appropriate global values file", func() {
@@ -147,7 +131,7 @@ var _ = Describe("patternizer init", func() {
 		})
 	})
 
-	Context("on a directory with a partially created global values file", Ordered, func() {
+	Context("on a directory with a custom global values file", Ordered, func() {
 		var tempDir string
 
 		BeforeAll(func() {
@@ -160,16 +144,8 @@ var _ = Describe("patternizer init", func() {
 			os.RemoveAll(tempDir)
 		})
 
-		It("should create the pattern.sh script", func() {
-			verifyPattenShCopied(tempDir)
-		})
-
-		It("should create the common Makefile", func() {
-			verifyMakefileCommonCopied(tempDir)
-		})
-
-		It("should create the Makefile for the pattern", func() {
-			verifyMakefileCopied(tempDir)
+		It("should copy the common pattern scaffold files", func() {
+			verifyScaffoldFilesCopied(tempDir)
 		})
 
 		It("should create an appropriate global values file", func() {
@@ -220,16 +196,8 @@ var _ = Describe("patternizer init --with-secrets", func() {
 			os.RemoveAll(tempDir)
 		})
 
-		It("should create the pattern.sh script", func() {
-			verifyPattenShCopied(tempDir)
-		})
-
-		It("should create the common Makefile", func() {
-			verifyMakefileCommonCopied(tempDir)
-		})
-
-		It("should create the Makefile for the pattern", func() {
-			verifyMakefileCopied(tempDir)
+		It("should copy the common pattern scaffold files", func() {
+			verifyScaffoldFilesCopied(tempDir)
 		})
 
 		It("should create an appropriate global values file", func() {
@@ -297,16 +265,8 @@ var _ = Describe("patternizer init --with-secrets", func() {
 			os.RemoveAll(tempDir)
 		})
 
-		It("should create the pattern.sh script", func() {
-			verifyPattenShCopied(tempDir)
-		})
-
-		It("should create the common Makefile", func() {
-			verifyMakefileCommonCopied(tempDir)
-		})
-
-		It("should create the Makefile for the pattern", func() {
-			verifyMakefileCopied(tempDir)
+		It("should copy the common pattern scaffold files", func() {
+			verifyScaffoldFilesCopied(tempDir)
 		})
 
 		It("should create an appropriate global values file", func() {
@@ -371,7 +331,7 @@ var _ = Describe("patternizer init --with-secrets", func() {
 		})
 	})
 
-	Context("on a directory with a partially created global values file", Ordered, func() {
+	Context("on a directory with a custom global values file", Ordered, func() {
 		var tempDir string
 
 		BeforeAll(func() {
@@ -384,16 +344,8 @@ var _ = Describe("patternizer init --with-secrets", func() {
 			os.RemoveAll(tempDir)
 		})
 
-		It("should create the pattern.sh script", func() {
-			verifyPattenShCopied(tempDir)
-		})
-
-		It("should create the common Makefile", func() {
-			verifyMakefileCommonCopied(tempDir)
-		})
-
-		It("should create the Makefile for the pattern", func() {
-			verifyMakefileCopied(tempDir)
+		It("should copy the common pattern scaffold files", func() {
+			verifyScaffoldFilesCopied(tempDir)
 		})
 
 		It("should create an appropriate global values file", func() {
@@ -428,6 +380,83 @@ var _ = Describe("patternizer init --with-secrets", func() {
 					},
 					Subscriptions: map[string]types.Subscription{},
 					Applications: map[string]types.Application{
+						"vault": {
+							Name:         "vault",
+							Namespace:    "vault",
+							Chart:        "hashicorp-vault",
+							ChartVersion: "0.1.*",
+						},
+						"golang-external-secrets": {
+							Name:         "golang-external-secrets",
+							Namespace:    "golang-external-secrets",
+							Chart:        "golang-external-secrets",
+							ChartVersion: "0.1.*",
+						},
+					},
+				},
+			}
+			verifyClusterGroupValues(clusterGroupValuesFile, expectedClusterGroupValues)
+		})
+	})
+
+	Context("after running patternizer init", Ordered, func() {
+		var tempDir string
+
+		BeforeAll(func() {
+			tempDir = createTestDir()
+			addDummyChart(tempDir, "test-app1")
+			addDummyChart(tempDir, "test-app2")
+			_ = runCLI(tempDir, "init")
+			_ = runCLI(tempDir, "init", "--with-secrets")
+		})
+
+		AfterAll(func() {
+			os.RemoveAll(tempDir)
+		})
+
+		It("should update the global values file to load secrets", func() {
+			globalValuesFile := filepath.Join(tempDir, "values-global.yaml")
+			expectedGlobalValues := types.ValuesGlobal{
+				Global: types.Global{
+					Pattern: filepath.Base(tempDir),
+					SecretLoader: types.SecretLoader{
+						Disabled: false,
+					},
+				},
+				Main: types.Main{
+					ClusterGroupName: "prod",
+					MultiSourceConfig: types.MultiSourceConfig{
+						Enabled:                  true,
+						ClusterGroupChartVersion: "0.9.*",
+					},
+				},
+			}
+			verifyGlobalValues(globalValuesFile, expectedGlobalValues)
+		})
+
+		It("should update the clustergroup values file to include secrets", func() {
+			clusterGroupValuesFile := filepath.Join(tempDir, "values-prod.yaml")
+			expectedNamespace := filepath.Base(tempDir)
+			expectedClusterGroupValues := types.ValuesClusterGroup{
+				ClusterGroup: types.ClusterGroup{
+					Name: "prod",
+					Namespaces: []types.NamespaceEntry{
+						types.NewNamespaceEntry(expectedNamespace),
+						types.NewNamespaceEntry("vault"),
+						types.NewNamespaceEntry("golang-external-secrets"),
+					},
+					Subscriptions: map[string]types.Subscription{},
+					Applications: map[string]types.Application{
+						"test-app1": {
+							Name:      "test-app1",
+							Namespace: expectedNamespace,
+							Path:      "charts/test-app1",
+						},
+						"test-app2": {
+							Name:      "test-app2",
+							Namespace: expectedNamespace,
+							Path:      "charts/test-app2",
+						},
 						"vault": {
 							Name:         "vault",
 							Namespace:    "vault",

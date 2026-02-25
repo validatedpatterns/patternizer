@@ -74,6 +74,12 @@ func verifyMakefileCopied(dir string) {
 	verifyFilesMatch(actual, expected)
 }
 
+func verifyScaffoldFilesCopied(dir string) {
+	verifyPattenShCopied(dir)
+	verifyMakefileCommonCopied(dir)
+	verifyMakefileCopied(dir)
+}
+
 func verifyFilesMatch(file1, file2 string) {
 	file1Contents, err := os.ReadFile(file1)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Could not read file %s", file1))
