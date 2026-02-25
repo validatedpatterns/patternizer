@@ -51,6 +51,29 @@ var _ = AfterSuite(func() {
 	gexec.CleanupBuildArtifacts()
 })
 
+func verifyPattenShCopied(dir string) {
+	actual := filepath.Join(dir, "pattern.sh")
+	expected := filepath.Join(resourcesPath, "pattern.sh")
+	verifyFilesMatch(actual, expected)
+
+	// verify pattern.sh is executable
+	info, err := os.Stat(actual)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(info.Mode() & 0111).NotTo(Equal(0))
+}
+
+func verifyMakefileCommonCopied(dir string) {
+	actual := filepath.Join(dir, "Makefile-common")
+	expected := filepath.Join(resourcesPath, "Makefile-common")
+	verifyFilesMatch(actual, expected)
+}
+
+func verifyMakefileCopied(dir string) {
+	actual := filepath.Join(dir, "Makefile")
+	expected := filepath.Join(resourcesPath, "Makefile")
+	verifyFilesMatch(actual, expected)
+}
+
 func verifyFilesMatch(file1, file2 string) {
 	file1Contents, err := os.ReadFile(file1)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Could not read file %s", file1))

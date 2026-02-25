@@ -6,7 +6,15 @@ import (
 
 	"github.com/dminnear-rh/patternizer/internal/types"
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
+
+const customValuesGlobal = `
+global:
+  pattern: test-pattern
+main:
+  clusterGroupName: test
+`
 
 var _ = Describe("patternizer init", func() {
 	Context("on an empty directory", Ordered, func() {
@@ -22,21 +30,15 @@ var _ = Describe("patternizer init", func() {
 		})
 
 		It("should create the pattern.sh script", func() {
-			actual := filepath.Join(tempDir, "pattern.sh")
-			expected := filepath.Join(resourcesPath, "pattern.sh")
-			verifyFilesMatch(actual, expected)
+			verifyPattenShCopied(tempDir)
 		})
 
 		It("should create the common Makefile", func() {
-			actual := filepath.Join(tempDir, "Makefile-common")
-			expected := filepath.Join(resourcesPath, "Makefile-common")
-			verifyFilesMatch(actual, expected)
+			verifyMakefileCommonCopied(tempDir)
 		})
 
 		It("should create the Makefile for the pattern", func() {
-			actual := filepath.Join(tempDir, "Makefile")
-			expected := filepath.Join(resourcesPath, "Makefile")
-			verifyFilesMatch(actual, expected)
+			verifyMakefileCopied(tempDir)
 		})
 
 		It("should create an appropriate global values file", func() {
@@ -88,21 +90,15 @@ var _ = Describe("patternizer init", func() {
 		})
 
 		It("should create the pattern.sh script", func() {
-			actual := filepath.Join(tempDir, "pattern.sh")
-			expected := filepath.Join(resourcesPath, "pattern.sh")
-			verifyFilesMatch(actual, expected)
+			verifyPattenShCopied(tempDir)
 		})
 
 		It("should create the common Makefile", func() {
-			actual := filepath.Join(tempDir, "Makefile-common")
-			expected := filepath.Join(resourcesPath, "Makefile-common")
-			verifyFilesMatch(actual, expected)
+			verifyMakefileCommonCopied(tempDir)
 		})
 
 		It("should create the Makefile for the pattern", func() {
-			actual := filepath.Join(tempDir, "Makefile")
-			expected := filepath.Join(resourcesPath, "Makefile")
-			verifyFilesMatch(actual, expected)
+			verifyMakefileCopied(tempDir)
 		})
 
 		It("should create an appropriate global values file", func() {
@@ -150,6 +146,65 @@ var _ = Describe("patternizer init", func() {
 			verifyClusterGroupValues(clusterGroupValuesFile, expectedClusterGroupValues)
 		})
 	})
+
+	Context("on a directory with a partially created global values file", Ordered, func() {
+		var tempDir string
+
+		BeforeAll(func() {
+			tempDir = createTestDir()
+			Expect(os.WriteFile(filepath.Join(tempDir, "values-global.yaml"), []byte(customValuesGlobal), 0644)).To(Succeed())
+			_ = runCLI(tempDir, "init")
+		})
+
+		AfterAll(func() {
+			os.RemoveAll(tempDir)
+		})
+
+		It("should create the pattern.sh script", func() {
+			verifyPattenShCopied(tempDir)
+		})
+
+		It("should create the common Makefile", func() {
+			verifyMakefileCommonCopied(tempDir)
+		})
+
+		It("should create the Makefile for the pattern", func() {
+			verifyMakefileCopied(tempDir)
+		})
+
+		It("should create an appropriate global values file", func() {
+			globalValuesFile := filepath.Join(tempDir, "values-global.yaml")
+			expectedGlobalValues := types.ValuesGlobal{
+				Global: types.Global{
+					Pattern: "test-pattern",
+					SecretLoader: types.SecretLoader{
+						Disabled: true,
+					},
+				},
+				Main: types.Main{
+					ClusterGroupName: "test",
+					MultiSourceConfig: types.MultiSourceConfig{
+						Enabled:                  true,
+						ClusterGroupChartVersion: "0.9.*",
+					},
+				},
+			}
+			verifyGlobalValues(globalValuesFile, expectedGlobalValues)
+		})
+
+		It("should create an appropriate clustergroup values file", func() {
+			clusterGroupValuesFile := filepath.Join(tempDir, "values-test.yaml")
+			expectedClusterGroupValues := types.ValuesClusterGroup{
+				ClusterGroup: types.ClusterGroup{
+					Name:          "test",
+					Namespaces:    []types.NamespaceEntry{types.NewNamespaceEntry("test-pattern")},
+					Subscriptions: map[string]types.Subscription{},
+					Applications:  map[string]types.Application{},
+				},
+			}
+			verifyClusterGroupValues(clusterGroupValuesFile, expectedClusterGroupValues)
+		})
+	})
 })
 
 var _ = Describe("patternizer init --with-secrets", func() {
@@ -166,21 +221,15 @@ var _ = Describe("patternizer init --with-secrets", func() {
 		})
 
 		It("should create the pattern.sh script", func() {
-			actual := filepath.Join(tempDir, "pattern.sh")
-			expected := filepath.Join(resourcesPath, "pattern.sh")
-			verifyFilesMatch(actual, expected)
+			verifyPattenShCopied(tempDir)
 		})
 
 		It("should create the common Makefile", func() {
-			actual := filepath.Join(tempDir, "Makefile-common")
-			expected := filepath.Join(resourcesPath, "Makefile-common")
-			verifyFilesMatch(actual, expected)
+			verifyMakefileCommonCopied(tempDir)
 		})
 
 		It("should create the Makefile for the pattern", func() {
-			actual := filepath.Join(tempDir, "Makefile")
-			expected := filepath.Join(resourcesPath, "Makefile")
-			verifyFilesMatch(actual, expected)
+			verifyMakefileCopied(tempDir)
 		})
 
 		It("should create an appropriate global values file", func() {
@@ -249,21 +298,15 @@ var _ = Describe("patternizer init --with-secrets", func() {
 		})
 
 		It("should create the pattern.sh script", func() {
-			actual := filepath.Join(tempDir, "pattern.sh")
-			expected := filepath.Join(resourcesPath, "pattern.sh")
-			verifyFilesMatch(actual, expected)
+			verifyPattenShCopied(tempDir)
 		})
 
 		It("should create the common Makefile", func() {
-			actual := filepath.Join(tempDir, "Makefile-common")
-			expected := filepath.Join(resourcesPath, "Makefile-common")
-			verifyFilesMatch(actual, expected)
+			verifyMakefileCommonCopied(tempDir)
 		})
 
 		It("should create the Makefile for the pattern", func() {
-			actual := filepath.Join(tempDir, "Makefile")
-			expected := filepath.Join(resourcesPath, "Makefile")
-			verifyFilesMatch(actual, expected)
+			verifyMakefileCopied(tempDir)
 		})
 
 		It("should create an appropriate global values file", func() {
@@ -293,7 +336,7 @@ var _ = Describe("patternizer init --with-secrets", func() {
 				ClusterGroup: types.ClusterGroup{
 					Name: "prod",
 					Namespaces: []types.NamespaceEntry{
-						types.NewNamespaceEntry(filepath.Base(tempDir)),
+						types.NewNamespaceEntry(expectedNamespace),
 						types.NewNamespaceEntry("vault"),
 						types.NewNamespaceEntry("golang-external-secrets"),
 					},
@@ -309,6 +352,82 @@ var _ = Describe("patternizer init --with-secrets", func() {
 							Namespace: expectedNamespace,
 							Path:      "charts/test-app2",
 						},
+						"vault": {
+							Name:         "vault",
+							Namespace:    "vault",
+							Chart:        "hashicorp-vault",
+							ChartVersion: "0.1.*",
+						},
+						"golang-external-secrets": {
+							Name:         "golang-external-secrets",
+							Namespace:    "golang-external-secrets",
+							Chart:        "golang-external-secrets",
+							ChartVersion: "0.1.*",
+						},
+					},
+				},
+			}
+			verifyClusterGroupValues(clusterGroupValuesFile, expectedClusterGroupValues)
+		})
+	})
+
+	Context("on a directory with a partially created global values file", Ordered, func() {
+		var tempDir string
+
+		BeforeAll(func() {
+			tempDir = createTestDir()
+			Expect(os.WriteFile(filepath.Join(tempDir, "values-global.yaml"), []byte(customValuesGlobal), 0644)).To(Succeed())
+			_ = runCLI(tempDir, "init", "--with-secrets")
+		})
+
+		AfterAll(func() {
+			os.RemoveAll(tempDir)
+		})
+
+		It("should create the pattern.sh script", func() {
+			verifyPattenShCopied(tempDir)
+		})
+
+		It("should create the common Makefile", func() {
+			verifyMakefileCommonCopied(tempDir)
+		})
+
+		It("should create the Makefile for the pattern", func() {
+			verifyMakefileCopied(tempDir)
+		})
+
+		It("should create an appropriate global values file", func() {
+			globalValuesFile := filepath.Join(tempDir, "values-global.yaml")
+			expectedGlobalValues := types.ValuesGlobal{
+				Global: types.Global{
+					Pattern: "test-pattern",
+					SecretLoader: types.SecretLoader{
+						Disabled: false,
+					},
+				},
+				Main: types.Main{
+					ClusterGroupName: "test",
+					MultiSourceConfig: types.MultiSourceConfig{
+						Enabled:                  true,
+						ClusterGroupChartVersion: "0.9.*",
+					},
+				},
+			}
+			verifyGlobalValues(globalValuesFile, expectedGlobalValues)
+		})
+
+		It("should create an appropriate clustergroup values file", func() {
+			clusterGroupValuesFile := filepath.Join(tempDir, "values-test.yaml")
+			expectedClusterGroupValues := types.ValuesClusterGroup{
+				ClusterGroup: types.ClusterGroup{
+					Name: "test",
+					Namespaces: []types.NamespaceEntry{
+						types.NewNamespaceEntry("test-pattern"),
+						types.NewNamespaceEntry("vault"),
+						types.NewNamespaceEntry("golang-external-secrets"),
+					},
+					Subscriptions: map[string]types.Subscription{},
+					Applications: map[string]types.Application{
 						"vault": {
 							Name:         "vault",
 							Namespace:    "vault",
