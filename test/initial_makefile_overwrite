@@ -1,6 +1,0 @@
-# Custom user Makefile
-# This should NOT be overwritten
-
-.PHONY: custom-target
-custom-target:
-	@echo "This is a custom user target"

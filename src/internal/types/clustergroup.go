@@ -85,7 +85,6 @@ type Subscription struct {
 // ClusterGroup holds the detailed configuration for the cluster group.
 type ClusterGroup struct {
 	Name          string                  `yaml:"name"`
-	IsHubCluster  bool                    `yaml:"isHubCluster,omitempty"`
 	Namespaces    []NamespaceEntry        `yaml:"namespaces"`
 	Projects      []string                `yaml:"projects,omitempty"`
 	Subscriptions map[string]Subscription `yaml:"subscriptions"`

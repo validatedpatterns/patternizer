@@ -141,11 +141,6 @@ func mergeClusterGroupValues(defaults, existing *types.ValuesClusterGroup) {
 
 	defaults.ClusterGroup.Projects = mergedProjects
 
-	// Preserve other fields from existing
-	if existing.ClusterGroup.IsHubCluster {
-		defaults.ClusterGroup.IsHubCluster = existing.ClusterGroup.IsHubCluster
-	}
-
 	// Merge subscriptions
 	for key, sub := range existing.ClusterGroup.Subscriptions {
 		defaults.ClusterGroup.Subscriptions[key] = sub

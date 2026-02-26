@@ -74,10 +74,17 @@ func verifyMakefileCopied(dir string) {
 	verifyFilesMatch(actual, expected)
 }
 
+func verifyAnsibleCfgCopied(dir string) {
+	actual := filepath.Join(dir, "ansible.cfg")
+	expected := filepath.Join(resourcesPath, "ansible.cfg")
+	verifyFilesMatch(actual, expected)
+}
+
 func verifyScaffoldFilesCopied(dir string) {
 	verifyPattenShCopied(dir)
 	verifyMakefileCommonCopied(dir)
 	verifyMakefileCopied(dir)
+	verifyAnsibleCfgCopied(dir)
 }
 
 func verifySecretTemplateCopied(dir string) {

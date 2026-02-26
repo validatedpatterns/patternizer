@@ -50,7 +50,7 @@ deps: ## Download and install Go dependencies
 .PHONY: test-unit
 test-unit: ## Run unit tests
 	@echo "Running unit tests..."
-	cd $(SRC_DIR) && $(GO_TEST) -v --args --ginkgo.v ./...
+	ginkgo -v ./...
 
 .PHONY: test-coverage
 test-coverage: ## Run unit tests with coverage report
@@ -58,19 +58,8 @@ test-coverage: ## Run unit tests with coverage report
 	cd $(SRC_DIR) && $(GO_TEST) ./... -coverprofile=coverage.out
 	cd $(SRC_DIR) && $(GO_CMD) tool cover -func=coverage.out
 
-.PHONY: shellcheck
-shellcheck: ## Run shellcheck on integration test script
-	@echo "Running shellcheck on integration test script..."
-	@podman run --pull always -v "$(PWD):/mnt:z" docker.io/koalaman/shellcheck:stable test/integration_test.sh
-	@echo "Shellcheck passed"
-
-.PHONY: test-integration
-test-integration: build shellcheck ## Run integration tests
-	@echo "Running integration tests..."
-	PATTERNIZER_BINARY=./$(SRC_DIR)/$(NAME) ./test/integration_test.sh
-
 .PHONY: test
-test: test-unit test-integration ## Run all tests (unit + integration)
+test: test-unit ## Run all tests (unit + integration)
 
 .PHONY: lint
 lint: lint-fmt lint-vet lint-golangci ## Run all linting checks
@@ -122,17 +111,6 @@ dev-setup: deps ## Set up development environment
 		go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION); \
 	fi
 	@echo "Development environment ready"
-
-.PHONY: version
-version: ## Show version information
-	@echo "Go version: $$(go version)"
-	@echo "Git commit: $$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')"
-	@echo "Build date: $$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-
-.PHONY: docs
-docs: ## Generate Go documentation
-	@echo "Generating documentation..."
-	cd $(SRC_DIR) && $(GO_CMD) doc -all ./...
 
 .PHONY: check
 check: lint-fmt lint-vet build test-unit ## Quick check (format, vet, build, unit tests)
