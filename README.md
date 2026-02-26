@@ -1,12 +1,12 @@
 # Patternizer
 
-![Version: 0.2.1](https://img.shields.io/badge/Version-0.2.1-informational?style=flat-square)
+![Version: 1.0.0](https://img.shields.io/badge/Version-1.0.0-informational?style=flat-square)
 [![Quay Repository](https://img.shields.io/badge/Quay.io-patternizer-blue?logo=quay)](https://quay.io/repository/validatedpatterns/patternizer)
 [![CI Pipeline](https://github.com/validatedpatterns/patternizer/actions/workflows/build-push.yaml/badge.svg?branch=main)](https://github.com/validatedpatterns/patternizer/actions/workflows/build-push.yaml)
 
 **Patternizer** is a command-line tool that bootstraps a Git repository containing Helm charts into a ready-to-use Validated Pattern. It automatically generates the necessary scaffolding, configuration files, and utility scripts, so you can get your pattern up and running in minutes. It can also be used to upgrade existing patterns as described in [the Validated Pattern's blog](https://validatedpatterns.io/blog/2025-08-29-new-common-makefile-structure/).
 
-> **Note:** This repo was developed with AI tools including [Cursor](https://cursor.com/), [Claude](https://claude.ai/login) and [Gemini](https://gemini.google.com/app).
+**Note:** This repo was developed with AI tools including [Cursor](https://cursor.com/), [Claude](https://claude.ai/login) and [Gemini](https://gemini.google.com/app).
 
 - [Patternizer](#patternizer)
   - [Quick Start](#quick-start)
@@ -40,7 +40,7 @@ This single command will generate all the necessary files to turn your repositor
 
 ## Example Workflow
 
-1.  **Clone or create your pattern repository:**
+1.  **Clone or create your pattern repository**
 
     ```bash
     git clone https://github.com/your-org/your-pattern.git
@@ -48,13 +48,13 @@ This single command will generate all the necessary files to turn your repositor
     git checkout -b initialize-pattern
     ```
 
-2.  **Initialize the pattern using Patternizer:**
+2.  **Initialize the pattern using Patternizer**
 
     ```bash
     podman run --pull=newer -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer init
     ```
 
-3.  **Review, commit, and push the generated files:**
+3.  **Review, commit, and push the generated files**
 
     ```bash
     git status
@@ -63,13 +63,13 @@ This single command will generate all the necessary files to turn your repositor
     git push -u origin initialize-pattern
     ```
 
-4. **Login to an OpenShift cluster:**
+4. **Login to an OpenShift cluster**
 
     ```bash
     export KUBECONFIG=/path/to/cluster/kubeconfig
     ```
 
-5.  **Install the pattern:**
+5.  **Install the pattern**
 
     ```bash
     ./pattern.sh make install
