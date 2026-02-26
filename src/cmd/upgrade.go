@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dminnear-rh/patternizer/internal/fileutils"
-	"github.com/dminnear-rh/patternizer/internal/pattern"
+	"github.com/validatedpatterns/patternizer/internal/fileutils"
+	"github.com/validatedpatterns/patternizer/internal/pattern"
 )
 
 // runUpgrade handles the upgrade logic for the upgrade command.

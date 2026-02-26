@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/dminnear-rh/patternizer/internal/fileutils"
-	"github.com/dminnear-rh/patternizer/internal/types"
+	"github.com/validatedpatterns/patternizer/internal/fileutils"
+	"github.com/validatedpatterns/patternizer/internal/types"
 )
 
 func TestGetResourcePath(t *testing.T) {

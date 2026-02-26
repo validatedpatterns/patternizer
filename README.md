@@ -168,7 +168,7 @@ This section is for developers who want to contribute to the Patternizer project
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/dminnear-rh/patternizer.git
+git clone https://github.com/validatedpatterns/patternizer.git
 cd patternizer
 
 # 2. Set up the development environment (installs tools)

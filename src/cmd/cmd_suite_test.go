@@ -13,7 +13,7 @@ import (
 	"github.com/onsi/gomega/gexec"
 	"gopkg.in/yaml.v3"
 
-	"github.com/dminnear-rh/patternizer/internal/types"
+	"github.com/validatedpatterns/patternizer/internal/types"
 )
 
 var (
@@ -33,7 +33,7 @@ var _ = BeforeSuite(func() {
 
 	wd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
-	projectRoot, err = filepath.Abs(filepath.Join(wd, "../.."))
+	projectRoot, err = filepath.Abs(filepath.Join(wd, "..", ".."))
 	Expect(err).NotTo(HaveOccurred())
 
 	resourcesPath = filepath.Join(projectRoot, "resources")
@@ -59,7 +59,7 @@ func verifyPattenShCopied(dir string) {
 	// verify pattern.sh is executable
 	info, err := os.Stat(actual)
 	Expect(err).NotTo(HaveOccurred())
-	Expect(info.Mode() & 0111).NotTo(Equal(0))
+	Expect(info.Mode() & 0o111).NotTo(Equal(0))
 }
 
 func verifyMakefileCommonCopied(dir string) {
@@ -80,6 +80,12 @@ func verifyScaffoldFilesCopied(dir string) {
 	verifyMakefileCopied(dir)
 }
 
+func verifySecretTemplateCopied(dir string) {
+	actual := filepath.Join(dir, "values-secret.yaml.template")
+	expected := filepath.Join(dir, "values-secret.yaml.template")
+	verifyFilesMatch(actual, expected)
+}
+
 func verifyFilesMatch(file1, file2 string) {
 	file1Contents, err := os.ReadFile(file1)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Could not read file %s", file1))
@@ -90,7 +96,7 @@ func verifyFilesMatch(file1, file2 string) {
 	Expect(bytes.Equal(file1Contents, file2Contents)).To(BeTrue(), fmt.Sprintf("%s and %s have different contents", file1, file2))
 }
 
-func verifyGlobalValues(valuesFile string, expectedGlobalValues types.ValuesGlobal) {
+func verifyGlobalValues(valuesFile string, expectedGlobalValues *types.ValuesGlobal) {
 	f, err := os.ReadFile(valuesFile)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Could not read file %s", valuesFile))
 
@@ -98,10 +104,10 @@ func verifyGlobalValues(valuesFile string, expectedGlobalValues types.ValuesGlob
 	err = yaml.Unmarshal(f, &globalValues)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Could not unmarshal %s into the ValuesGlobal type", valuesFile))
 
-	Expect(*globalValues).To(Equal(expectedGlobalValues), fmt.Sprintf("Global values in %s differ from expected values", valuesFile))
+	Expect(*globalValues).To(Equal(*expectedGlobalValues), fmt.Sprintf("Global values in %s differ from expected values", valuesFile))
 }
 
-func verifyClusterGroupValues(valuesFile string, expectedClusterGroupValues types.ValuesClusterGroup) {
+func verifyClusterGroupValues(valuesFile string, expectedClusterGroupValues *types.ValuesClusterGroup) {
 	f, err := os.ReadFile(valuesFile)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Could not read file %s", valuesFile))
 
@@ -109,7 +115,7 @@ func verifyClusterGroupValues(valuesFile string, expectedClusterGroupValues type
 	err = yaml.Unmarshal(f, &clusterGroupValues)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Could not unmarshal %s into the ValuesClusterGroup type", valuesFile))
 
-	Expect(*clusterGroupValues).To(Equal(expectedClusterGroupValues), fmt.Sprintf("Clustergroup values in %s differ from expected values", valuesFile))
+	Expect(*clusterGroupValues).To(Equal(*expectedClusterGroupValues), fmt.Sprintf("Clustergroup values in %s differ from expected values", valuesFile))
 }
 
 func createTestDir() string {
@@ -131,8 +137,8 @@ func runCLI(dir string, args ...string) *gexec.Session {
 
 func addDummyChart(dir, name string) {
 	path := filepath.Join(dir, "charts", name)
-	Expect(os.MkdirAll(path, 0755)).To(Succeed())
-	Expect(os.WriteFile(filepath.Join(path, "Chart.yaml"), []byte("name: "+name+"\nversion: 0.1.0"), 0644)).To(Succeed())
-	Expect(os.WriteFile(filepath.Join(path, "values.yaml"), []byte("replicaCount: 1"), 0644)).To(Succeed())
-	Expect(os.MkdirAll(filepath.Join(path, "templates"), 0755)).To(Succeed())
+	Expect(os.MkdirAll(path, 0o755)).To(Succeed())
+	Expect(os.WriteFile(filepath.Join(path, "Chart.yaml"), []byte("name: "+name+"\nversion: 0.1.0"), 0o644)).To(Succeed())
+	Expect(os.WriteFile(filepath.Join(path, "values.yaml"), []byte("replicaCount: 1"), 0o644)).To(Succeed())
+	Expect(os.MkdirAll(filepath.Join(path, "templates"), 0o755)).To(Succeed())
 }

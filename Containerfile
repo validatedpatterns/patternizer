@@ -1,4 +1,4 @@
-ARG GO_VERSION=1.24
+ARG GO_VERSION=1.25.7
 ARG GOARCH=amd64
 
 # Build stage

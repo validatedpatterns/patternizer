@@ -7,8 +7,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/dminnear-rh/patternizer/internal/fileutils"
-	"github.com/dminnear-rh/patternizer/internal/types"
+	"github.com/validatedpatterns/patternizer/internal/fileutils"
+	"github.com/validatedpatterns/patternizer/internal/types"
 )
 
 // GetPatternNameAndRepoRoot returns the pattern name and repository root directory.

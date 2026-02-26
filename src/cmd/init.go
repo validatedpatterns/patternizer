@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dminnear-rh/patternizer/internal/fileutils"
-	"github.com/dminnear-rh/patternizer/internal/helm"
-	"github.com/dminnear-rh/patternizer/internal/pattern"
+	"github.com/validatedpatterns/patternizer/internal/fileutils"
+	"github.com/validatedpatterns/patternizer/internal/helm"
+	"github.com/validatedpatterns/patternizer/internal/pattern"
 )
 
 // runInit handles the initialization logic for the init command.

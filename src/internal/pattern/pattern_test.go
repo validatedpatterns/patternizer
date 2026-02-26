@@ -7,7 +7,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/dminnear-rh/patternizer/internal/types"
+	"github.com/validatedpatterns/patternizer/internal/types"
 )
 
 // TestProcessGlobalValuesPreservesFields tests that ProcessGlobalValues preserves existing user fields.

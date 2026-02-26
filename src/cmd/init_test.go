@@ -4,9 +4,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dminnear-rh/patternizer/internal/types"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/validatedpatterns/patternizer/internal/types"
 )
 
 const customGlobalValues = `
@@ -31,6 +32,16 @@ clusterGroup:
       project: custom-pattern-name
 
 customClusterTopLevel: user-cluster-top-level
+`
+
+const customSecretTemplate = `
+version: "2.0"
+
+secrets:
+  - name: customSecret
+    fields:
+    - name: test
+      value: test
 `
 
 var _ = Describe("patternizer init", func() {
@@ -67,7 +78,7 @@ var _ = Describe("patternizer init", func() {
 					},
 				},
 			}
-			verifyGlobalValues(globalValuesFile, expectedGlobalValues)
+			verifyGlobalValues(globalValuesFile, &expectedGlobalValues)
 		})
 
 		It("should create an appropriate clustergroup values file", func() {
@@ -80,7 +91,7 @@ var _ = Describe("patternizer init", func() {
 					Applications:  map[string]types.Application{},
 				},
 			}
-			verifyClusterGroupValues(clusterGroupValuesFile, expectedClusterGroupValues)
+			verifyClusterGroupValues(clusterGroupValuesFile, &expectedClusterGroupValues)
 		})
 	})
 
@@ -119,7 +130,7 @@ var _ = Describe("patternizer init", func() {
 					},
 				},
 			}
-			verifyGlobalValues(globalValuesFile, expectedGlobalValues)
+			verifyGlobalValues(globalValuesFile, &expectedGlobalValues)
 		})
 
 		It("should create an appropriate clustergroup values file", func() {
@@ -144,7 +155,7 @@ var _ = Describe("patternizer init", func() {
 					},
 				},
 			}
-			verifyClusterGroupValues(clusterGroupValuesFile, expectedClusterGroupValues)
+			verifyClusterGroupValues(clusterGroupValuesFile, &expectedClusterGroupValues)
 		})
 	})
 
@@ -153,7 +164,7 @@ var _ = Describe("patternizer init", func() {
 
 		BeforeAll(func() {
 			tempDir = createTestDir()
-			Expect(os.WriteFile(filepath.Join(tempDir, "values-global.yaml"), []byte(customGlobalValues), 0644)).To(Succeed())
+			Expect(os.WriteFile(filepath.Join(tempDir, "values-global.yaml"), []byte(customGlobalValues), 0o644)).To(Succeed())
 			_ = runCLI(tempDir, "init")
 		})
 
@@ -182,7 +193,7 @@ var _ = Describe("patternizer init", func() {
 					},
 				},
 			}
-			verifyGlobalValues(globalValuesFile, expectedGlobalValues)
+			verifyGlobalValues(globalValuesFile, &expectedGlobalValues)
 		})
 
 		It("should create an appropriate clustergroup values file", func() {
@@ -195,7 +206,7 @@ var _ = Describe("patternizer init", func() {
 					Applications:  map[string]types.Application{},
 				},
 			}
-			verifyClusterGroupValues(clusterGroupValuesFile, expectedClusterGroupValues)
+			verifyClusterGroupValues(clusterGroupValuesFile, &expectedClusterGroupValues)
 		})
 	})
 
@@ -204,8 +215,8 @@ var _ = Describe("patternizer init", func() {
 
 		BeforeAll(func() {
 			tempDir = createTestDir()
-			Expect(os.WriteFile(filepath.Join(tempDir, "values-global.yaml"), []byte(customGlobalValues), 0644)).To(Succeed())
-			Expect(os.WriteFile(filepath.Join(tempDir, "values-test.yaml"), []byte(customClusterGroupValues), 0644)).To(Succeed())
+			Expect(os.WriteFile(filepath.Join(tempDir, "values-global.yaml"), []byte(customGlobalValues), 0o644)).To(Succeed())
+			Expect(os.WriteFile(filepath.Join(tempDir, "values-test.yaml"), []byte(customClusterGroupValues), 0o644)).To(Succeed())
 			_ = runCLI(tempDir, "init")
 		})
 
@@ -234,7 +245,7 @@ var _ = Describe("patternizer init", func() {
 					},
 				},
 			}
-			verifyGlobalValues(globalValuesFile, expectedGlobalValues)
+			verifyGlobalValues(globalValuesFile, &expectedGlobalValues)
 		})
 
 		It("should create an appropriate clustergroup values file", func() {
@@ -257,7 +268,7 @@ var _ = Describe("patternizer init", func() {
 				},
 				OtherFields: map[string]interface{}{"customClusterTopLevel": "user-cluster-top-level"},
 			}
-			verifyClusterGroupValues(clusterGroupValuesFile, expectedClusterGroupValues)
+			verifyClusterGroupValues(clusterGroupValuesFile, &expectedClusterGroupValues)
 		})
 	})
 })
@@ -279,6 +290,10 @@ var _ = Describe("patternizer init --with-secrets", func() {
 			verifyScaffoldFilesCopied(tempDir)
 		})
 
+		It("should copy the secrets template file", func() {
+			verifySecretTemplateCopied(tempDir)
+		})
+
 		It("should create an appropriate global values file", func() {
 			globalValuesFile := filepath.Join(tempDir, "values-global.yaml")
 			expectedGlobalValues := types.ValuesGlobal{
@@ -296,7 +311,7 @@ var _ = Describe("patternizer init --with-secrets", func() {
 					},
 				},
 			}
-			verifyGlobalValues(globalValuesFile, expectedGlobalValues)
+			verifyGlobalValues(globalValuesFile, &expectedGlobalValues)
 		})
 
 		It("should create an appropriate clustergroup values file", func() {
@@ -326,7 +341,7 @@ var _ = Describe("patternizer init --with-secrets", func() {
 					},
 				},
 			}
-			verifyClusterGroupValues(clusterGroupValuesFile, expectedClusterGroupValues)
+			verifyClusterGroupValues(clusterGroupValuesFile, &expectedClusterGroupValues)
 		})
 	})
 
@@ -348,6 +363,10 @@ var _ = Describe("patternizer init --with-secrets", func() {
 			verifyScaffoldFilesCopied(tempDir)
 		})
 
+		It("should copy the secrets template file", func() {
+			verifySecretTemplateCopied(tempDir)
+		})
+
 		It("should create an appropriate global values file", func() {
 			globalValuesFile := filepath.Join(tempDir, "values-global.yaml")
 			expectedGlobalValues := types.ValuesGlobal{
@@ -365,7 +384,7 @@ var _ = Describe("patternizer init --with-secrets", func() {
 					},
 				},
 			}
-			verifyGlobalValues(globalValuesFile, expectedGlobalValues)
+			verifyGlobalValues(globalValuesFile, &expectedGlobalValues)
 		})
 
 		It("should create an appropriate clustergroup values file", func() {
@@ -406,7 +425,7 @@ var _ = Describe("patternizer init --with-secrets", func() {
 					},
 				},
 			}
-			verifyClusterGroupValues(clusterGroupValuesFile, expectedClusterGroupValues)
+			verifyClusterGroupValues(clusterGroupValuesFile, &expectedClusterGroupValues)
 		})
 	})
 
@@ -415,7 +434,7 @@ var _ = Describe("patternizer init --with-secrets", func() {
 
 		BeforeAll(func() {
 			tempDir = createTestDir()
-			Expect(os.WriteFile(filepath.Join(tempDir, "values-global.yaml"), []byte(customGlobalValues), 0644)).To(Succeed())
+			Expect(os.WriteFile(filepath.Join(tempDir, "values-global.yaml"), []byte(customGlobalValues), 0o644)).To(Succeed())
 			_ = runCLI(tempDir, "init", "--with-secrets")
 		})
 
@@ -425,6 +444,10 @@ var _ = Describe("patternizer init --with-secrets", func() {
 
 		It("should copy the common pattern scaffold files", func() {
 			verifyScaffoldFilesCopied(tempDir)
+		})
+
+		It("should copy the secrets template file", func() {
+			verifySecretTemplateCopied(tempDir)
 		})
 
 		It("should create an appropriate global values file", func() {
@@ -444,7 +467,7 @@ var _ = Describe("patternizer init --with-secrets", func() {
 					},
 				},
 			}
-			verifyGlobalValues(globalValuesFile, expectedGlobalValues)
+			verifyGlobalValues(globalValuesFile, &expectedGlobalValues)
 		})
 
 		It("should create an appropriate clustergroup values file", func() {
@@ -474,7 +497,7 @@ var _ = Describe("patternizer init --with-secrets", func() {
 					},
 				},
 			}
-			verifyClusterGroupValues(clusterGroupValuesFile, expectedClusterGroupValues)
+			verifyClusterGroupValues(clusterGroupValuesFile, &expectedClusterGroupValues)
 		})
 	})
 
@@ -491,6 +514,10 @@ var _ = Describe("patternizer init --with-secrets", func() {
 
 		AfterAll(func() {
 			os.RemoveAll(tempDir)
+		})
+
+		It("should copy the secrets template file", func() {
+			verifySecretTemplateCopied(tempDir)
 		})
 
 		It("should update the global values file to load secrets", func() {
@@ -510,7 +537,7 @@ var _ = Describe("patternizer init --with-secrets", func() {
 					},
 				},
 			}
-			verifyGlobalValues(globalValuesFile, expectedGlobalValues)
+			verifyGlobalValues(globalValuesFile, &expectedGlobalValues)
 		})
 
 		It("should update the clustergroup values file to include secrets", func() {
@@ -551,7 +578,7 @@ var _ = Describe("patternizer init --with-secrets", func() {
 					},
 				},
 			}
-			verifyClusterGroupValues(clusterGroupValuesFile, expectedClusterGroupValues)
+			verifyClusterGroupValues(clusterGroupValuesFile, &expectedClusterGroupValues)
 		})
 	})
 
@@ -560,8 +587,8 @@ var _ = Describe("patternizer init --with-secrets", func() {
 
 		BeforeAll(func() {
 			tempDir = createTestDir()
-			Expect(os.WriteFile(filepath.Join(tempDir, "values-global.yaml"), []byte(customGlobalValues), 0644)).To(Succeed())
-			Expect(os.WriteFile(filepath.Join(tempDir, "values-test.yaml"), []byte(customClusterGroupValues), 0644)).To(Succeed())
+			Expect(os.WriteFile(filepath.Join(tempDir, "values-global.yaml"), []byte(customGlobalValues), 0o644)).To(Succeed())
+			Expect(os.WriteFile(filepath.Join(tempDir, "values-test.yaml"), []byte(customClusterGroupValues), 0o644)).To(Succeed())
 			_ = runCLI(tempDir, "init", "--with-secrets")
 		})
 
@@ -571,6 +598,10 @@ var _ = Describe("patternizer init --with-secrets", func() {
 
 		It("should copy the common pattern scaffold files", func() {
 			verifyScaffoldFilesCopied(tempDir)
+		})
+
+		It("should copy the secrets template file", func() {
+			verifySecretTemplateCopied(tempDir)
 		})
 
 		It("should create an appropriate global values file", func() {
@@ -590,7 +621,7 @@ var _ = Describe("patternizer init --with-secrets", func() {
 					},
 				},
 			}
-			verifyGlobalValues(globalValuesFile, expectedGlobalValues)
+			verifyGlobalValues(globalValuesFile, &expectedGlobalValues)
 		})
 
 		It("should create an appropriate clustergroup values file", func() {
@@ -629,7 +660,27 @@ var _ = Describe("patternizer init --with-secrets", func() {
 				},
 				OtherFields: map[string]interface{}{"customClusterTopLevel": "user-cluster-top-level"},
 			}
-			verifyClusterGroupValues(clusterGroupValuesFile, expectedClusterGroupValues)
+			verifyClusterGroupValues(clusterGroupValuesFile, &expectedClusterGroupValues)
+		})
+	})
+
+	Context("on a directory with a custom secret template", Ordered, func() {
+		var tempDir string
+
+		BeforeAll(func() {
+			tempDir = createTestDir()
+			Expect(os.WriteFile(filepath.Join(tempDir, "values-secret.yaml.template"), []byte(customSecretTemplate), 0o644)).To(Succeed())
+			_ = runCLI(tempDir, "init", "--with-secrets")
+		})
+
+		AfterAll(func() {
+			os.RemoveAll(tempDir)
+		})
+
+		It("should not modify the secrets template file", func() {
+			actual, err := os.ReadFile(filepath.Join(tempDir, "values-secret.yaml.template"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(actual)).To(Equal(customSecretTemplate))
 		})
 	})
 })
