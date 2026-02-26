@@ -12,12 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
           cache-dependency-path: src/go.sum
@@ -29,22 +29,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
           cache-dependency-path: src/go.sum
 
-      - name: Build binary
-        run: make build
+      - name: Install ginkgo
+        run: make dev-setup
 
-      - name: Run unit tests
-        run: make test-unit
+      - name: Run tests
+        run: make test
 
       - name: Generate test coverage report
         run: make test-coverage
-
-      - name: Run integration tests
-        run: make test-integration
