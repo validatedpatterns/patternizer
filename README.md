@@ -4,12 +4,11 @@
 [![Quay Repository](https://img.shields.io/badge/Quay.io-patternizer-blue?logo=quay)](https://quay.io/repository/validatedpatterns/patternizer)
 [![CI Pipeline](https://github.com/validatedpatterns/patternizer/actions/workflows/build-push.yaml/badge.svg?branch=main)](https://github.com/validatedpatterns/patternizer/actions/workflows/build-push.yaml)
 
-**Patternizer** is a command-line tool that bootstraps a Git repository containing Helm charts into a ready-to-use Validated Pattern. It automatically generates the necessary scaffolding, configuration files, and utility scripts, so you can get your pattern up and running in minutes.
+**Patternizer** is a command-line tool that bootstraps a Git repository containing Helm charts into a ready-to-use Validated Pattern. It automatically generates the necessary scaffolding, configuration files, and utility scripts, so you can get your pattern up and running in minutes. It can also be used to upgrade existing patterns as described in [the Validated Pattern's blog](https://validatedpatterns.io/blog/2025-08-29-new-common-makefile-structure/).
 
-> **Note:** This tool was developed with assistance from [Cursor](https://cursor.sh), an AI-powered code editor.
+> **Note:** This repo was developed with AI tools including [Cursor](https://cursor.com/), [Claude](https://claude.ai/login) and [Gemini](https://gemini.google.com/app).
 
 - [Patternizer](#patternizer)
-  - [Features](#features)
   - [Quick Start](#quick-start)
   - [Example Workflow](#example-workflow)
   - [Usage Details](#usage-details)
@@ -22,24 +21,9 @@
   - [Development \& Contributing](#development--contributing)
     - [Prerequisites](#prerequisites)
     - [Local Development Workflow](#local-development-workflow)
-    - [Common Makefile Targets](#common-makefile-targets)
-    - [Testing Strategy](#testing-strategy)
-    - [Architecture](#architecture)
-    - [CI/CD Pipeline](#cicd-pipeline)
     - [How to Contribute](#how-to-contribute)
 
-## Features
-
-- 🚀 **CLI-first design** with intuitive commands and help system
-- 📦 **Container-native** for consistent execution across all environments
-- 🔍 **Auto-discovery** of Helm charts and Git repository metadata
-- 🔐 **Optional secrets integration** with Vault and External Secrets
-- 🏗️ **Makefile-driven** utility scripts for easy pattern management
-- ♻️ **Upgrade command** to refresh existing pattern repositories to the latest common structure
-
 ## Quick Start
-
-This guide assumes you have a Git repository containing one or more Helm charts.
 
 **Prerequisites:**
 
@@ -49,8 +33,7 @@ This guide assumes you have a Git repository containing one or more Helm charts.
 Navigate to your repository's root directory and run the initialization command:
 
 ```bash
-# In the root of your pattern-repo
-podman run -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer init
+podman run --pull=newer -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer init
 ```
 
 This single command will generate all the necessary files to turn your repository into a Validated Pattern.
@@ -68,7 +51,7 @@ This single command will generate all the necessary files to turn your repositor
 2.  **Initialize the pattern using Patternizer:**
 
     ```bash
-    podman run -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer init
+    podman run --pull=newer -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer init
     ```
 
 3.  **Review, commit, and push the generated files:**
@@ -80,7 +63,13 @@ This single command will generate all the necessary files to turn your repositor
     git push -u origin initialize-pattern
     ```
 
-4.  **Install the pattern:**
+4. **Login to an OpenShift cluster:**
+
+    ```bash
+    export KUBECONFIG=/path/to/cluster/kubeconfig
+    ```
+
+5.  **Install the pattern:**
 
     ```bash
     ./pattern.sh make install
@@ -90,7 +79,7 @@ This single command will generate all the necessary files to turn your repositor
 
 ### Container Usage (Recommended)
 
-Using the prebuilt container is the easiest way to run Patternizer, as it requires no local installation. The `-v "$PWD:$PWD:z" -w "$PWD"` flag mounts your current directory into the container's `/repo` workspace.
+Using the prebuilt container is the easiest way to run Patternizer, as it requires no local installation.
 
 #### **Initialize without secrets:**
 
@@ -119,10 +108,9 @@ podman run --pull=newer -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/pat
 What upgrade does:
 
 - Removes the `common/` directory if it exists
-- Removes `./pattern.sh` if it exists (symlink or file)
-- Copies `resources/Makefile-common` and `resources/pattern.sh` into the repo root
+- Updates `ansible.cfg`, `Makefile-common`, and `pattern.sh` to the latest versions from [the resources directory](./resources/)
 - Makefile handling:
-  - If `--replace-makefile` is set: copies the default `Makefile` into the repo root (overwriting any existing one)
+  - If `--replace-makefile` is set: replaces an existing Makefile, if present, to [`Makefile`](./resources/Makefile) from the resources directory
   - If not set:
     - If no `Makefile` exists: copies the default `Makefile`
     - If a `Makefile` exists and already contains `include Makefile-common` anywhere: leaves it unchanged
@@ -147,6 +135,7 @@ Running `patternizer init` creates the following:
 - `pattern.sh`: A utility script for common pattern operations (`install`, `upgrade`, etc.).
 - `Makefile`: A simple Makefile that includes `Makefile-common`.
 - `Makefile-common`: The core Makefile with all pattern-related targets.
+- `ansible.cfg`: Configuration for the ansible installation used when `./pattern.sh` is called
 
 Using the `--with-secrets` flag additionally creates:
 
@@ -159,7 +148,7 @@ This section is for developers who want to contribute to the Patternizer project
 
 ### Prerequisites
 
-- Go (see `go.mod` for version)
+- Go (see [`go.mod`](./src/go.mod) for version)
 - Podman or Docker
 - Git
 - Make
@@ -171,7 +160,7 @@ This section is for developers who want to contribute to the Patternizer project
 git clone https://github.com/validatedpatterns/patternizer.git
 cd patternizer
 
-# 2. Set up the development environment (installs tools)
+# 2. Set up the development environment
 make dev-setup
 
 # 3. Make your changes...
@@ -179,45 +168,6 @@ make dev-setup
 # 4. Run the full CI suite locally before committing
 make ci
 ```
-
-### Common Makefile Targets
-
-The `Makefile` is the single source of truth for all development and CI tasks.
-
-- `make help`: Show all available targets.
-- `make check`: Quick feedback loop (format, vet, build, unit tests).
-- `make build`: Build the `patternizer` binary.
-- `make test`: Run all tests (unit and integration).
-- `make test-unit`: Run unit tests only.
-- `make test-integration`: Run integration tests only.
-- `make lint`: Run all code quality checks.
-- `make amd64`: Build the amd64 container image locally.
-- `make arm64`: Build the arm64 container image locally.
-
-### Testing Strategy
-
-Patternizer has a comprehensive test suite to ensure stability and correctness.
-
-- **Unit Tests:** Located alongside the code they test (e.g., `src/internal/helm/helm_test.go`), these tests cover individual functions and packages in isolation. They validate Helm chart detection, Git URL parsing, and YAML processing logic.
-- **Integration Tests:** The integration test suite (`test/integration_test.sh`) validates the end-to-end CLI workflow against a real Git repository. Key scenarios include:
-  1.  **Basic Init:** Validates default file generation without secrets.
-  2.  **Init with Secrets:** Ensures secrets-related applications and files are correctly added.
-  3.  **Configuration Preservation:** Verifies that existing custom values are preserved when the tool is re-run.
-  4.  **Sequential Execution:** Tests running `init` and then `init --with-secrets` to ensure a clean upgrade.
-  5.  **Selective File Overwriting:** Confirms that running `init` on a repository with pre-existing custom files correctly **merges YAML configurations**, preserves user-modified files (like `Makefile` and `values-secret.yaml.template`), and only overwrites essential, generated scripts (`pattern.sh`, `Makefile-common`).
-  6.  **Mixed State Handling:** Validates that the tool correctly initializes a partially-configured repository, **creating files that are missing** while leaving existing ones untouched.
-  7.  **Upgrade (no replace):** Removes legacy `common/` and `pattern.sh` symlink, copies `Makefile-common`/`pattern.sh`, and injects `include Makefile-common` at the top of `Makefile` when missing.
-  8.  **Upgrade (include present):** Leaves the existing `Makefile` unchanged when it already contains `include Makefile-common` anywhere.
-  9.  **Upgrade with `--replace-makefile`:** Replaces `Makefile` with the default and refreshes common assets.
-  10. **Upgrade (no Makefile present):** Creates the default `Makefile` and refreshes common assets when a `Makefile` does not exist.
-
-### Architecture
-
-The CLI is organized into focused packages following Go best practices, with a clean separation of concerns between command-line logic (`cmd`), core business logic (`internal`), and file operations (`fileutils`). This modular design makes the codebase maintainable, testable, and extensible.
-
-### CI/CD Pipeline
-
-The GitHub Actions pipeline (`.github/workflows/ci.yaml`) runs on every push and pull request. It uses the same `Makefile` targets that developers use locally, ensuring perfect consistency between local and CI environments.
 
 ### How to Contribute
 

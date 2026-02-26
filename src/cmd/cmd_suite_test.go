@@ -20,7 +20,6 @@ var (
 	binaryPath    string
 	resourcesPath string
 	projectRoot   string
-	testPath      string
 )
 
 func TestCmd(t *testing.T) {
@@ -39,9 +38,6 @@ var _ = BeforeSuite(func() {
 	resourcesPath = filepath.Join(projectRoot, "resources")
 	Expect(resourcesPath).To(BeADirectory(), "Could not find resources directory")
 	os.Setenv("PATTERNIZER_RESOURCES_DIR", resourcesPath)
-
-	testPath = filepath.Join(projectRoot, "test")
-	Expect(testPath).To(BeADirectory(), "Could not find test directory")
 
 	binaryPath, err = gexec.Build(filepath.Join(projectRoot, "src"))
 	Expect(err).NotTo(HaveOccurred())
