@@ -1,6 +1,6 @@
 # Patternizer
 
-![Version: 1.0.0](https://img.shields.io/badge/Version-1.0.0-informational?style=flat-square)
+![Version: 1.0.1](https://img.shields.io/badge/Version-1.0.1-informational?style=flat-square)
 [![Quay Repository](https://img.shields.io/badge/Quay.io-patternizer-blue?logo=quay)](https://quay.io/repository/validatedpatterns/patternizer)
 [![CI Pipeline](https://github.com/validatedpatterns/patternizer/actions/workflows/build-push.yaml/badge.svg?branch=main)](https://github.com/validatedpatterns/patternizer/actions/workflows/build-push.yaml)
 
