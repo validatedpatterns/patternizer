@@ -3,352 +3,13 @@ package pattern
 import (
 	"os"
 	"path/filepath"
-	"testing"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v3"
 
 	"github.com/validatedpatterns/patternizer/internal/types"
 )
-
-// TestProcessGlobalValuesPreservesFields tests that ProcessGlobalValues preserves existing user fields.
-func TestProcessGlobalValuesPreservesFields(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "pattern-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	// Create initial values-global.yaml with custom fields
-	initialValues := map[string]interface{}{
-		"global": map[string]interface{}{
-			"pattern":     "existing-pattern",
-			"customField": "customValue",
-			"nestedCustom": map[string]interface{}{
-				"key1": "value1",
-				"key2": 42,
-			},
-		},
-		"main": map[string]interface{}{
-			"clusterGroupName": "custom-cluster-group",
-			"multiSourceConfig": map[string]interface{}{
-				"enabled":                  false,   // Different from default
-				"clusterGroupChartVersion": "1.0.*", // Different from default
-				"customMultiSource":        "customValue",
-			},
-			"customMainField": "mainCustomValue",
-		},
-		"customTopLevel": map[string]interface{}{
-			"someKey":    "someValue",
-			"anotherKey": []string{"item1", "item2"},
-		},
-	}
-
-	valuesPath := filepath.Join(tempDir, "values-global.yaml")
-	initialYaml, err := yaml.Marshal(initialValues)
-	if err != nil {
-		t.Fatalf("Failed to marshal initial values: %v", err)
-	}
-	if err := os.WriteFile(valuesPath, initialYaml, 0o644); err != nil {
-		t.Fatalf("Failed to write initial values file: %v", err)
-	}
-
-	// Process the values (test without secrets)
-	actualPatternName, clusterGroupName, err := ProcessGlobalValues("new-pattern", tempDir, false)
-	if err != nil {
-		t.Fatalf("ProcessGlobalValues failed: %v", err)
-	}
-
-	// Verify return values
-	if actualPatternName != "existing-pattern" {
-		t.Errorf("Expected pattern name 'existing-pattern', got '%s'", actualPatternName)
-	}
-	if clusterGroupName != "custom-cluster-group" {
-		t.Errorf("Expected cluster group name 'custom-cluster-group', got '%s'", clusterGroupName)
-	}
-
-	// Read the processed file
-	processedData, err := os.ReadFile(valuesPath)
-	if err != nil {
-		t.Fatalf("Failed to read processed file: %v", err)
-	}
-
-	var processedValues map[string]interface{}
-	if err := yaml.Unmarshal(processedData, &processedValues); err != nil {
-		t.Fatalf("Failed to unmarshal processed values: %v", err)
-	}
-
-	// Verify all custom fields are preserved
-	tests := []struct {
-		path     []string
-		expected interface{}
-	}{
-		{[]string{"global", "pattern"}, "existing-pattern"},
-		{[]string{"global", "customField"}, "customValue"},
-		{[]string{"global", "nestedCustom", "key1"}, "value1"},
-		{[]string{"global", "nestedCustom", "key2"}, 42},
-		{[]string{"main", "clusterGroupName"}, "custom-cluster-group"},
-		{[]string{"main", "multiSourceConfig", "enabled"}, false},
-		{[]string{"main", "multiSourceConfig", "clusterGroupChartVersion"}, "1.0.*"},
-		{[]string{"main", "multiSourceConfig", "customMultiSource"}, "customValue"},
-		{[]string{"main", "customMainField"}, "mainCustomValue"},
-		{[]string{"customTopLevel", "someKey"}, "someValue"},
-	}
-
-	for _, tt := range tests {
-		value := getNestedValue(processedValues, tt.path)
-		if value != tt.expected {
-			t.Errorf("Field %v = %v, expected %v", tt.path, value, tt.expected)
-		}
-	}
-
-	// Verify array field is preserved
-	customTopLevel, ok := processedValues["customTopLevel"].(map[string]interface{})
-	if !ok {
-		t.Fatalf("customTopLevel is not a map")
-	}
-	anotherKey, ok := customTopLevel["anotherKey"].([]interface{})
-	if !ok {
-		t.Fatalf("anotherKey is not an array")
-	}
-	expectedArray := []interface{}{"item1", "item2"}
-	if len(anotherKey) != len(expectedArray) {
-		t.Errorf("anotherKey length = %d, expected %d", len(anotherKey), len(expectedArray))
-	}
-	for i, expected := range expectedArray {
-		if i < len(anotherKey) && anotherKey[i] != expected {
-			t.Errorf("anotherKey[%d] = %v, expected %v", i, anotherKey[i], expected)
-		}
-	}
-}
-
-// TestProcessClusterGroupValuesPreservesFields tests that ProcessClusterGroupValues preserves existing user fields.
-func TestProcessClusterGroupValuesPreservesFields(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "pattern-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	// Create initial values-prod.yaml with custom fields
-	initialValues := map[string]interface{}{
-		"clusterGroup": map[string]interface{}{
-			"name":         "prod",
-			"isHubCluster": true,
-			"namespaces":   []interface{}{"custom-ns1", "custom-ns2"},
-			"projects":     []interface{}{"custom-proj1", "custom-proj2"},
-			"subscriptions": map[string]interface{}{
-				"custom-operator": map[string]interface{}{
-					"name":      "custom-operator",
-					"namespace": "custom-namespace",
-					"channel":   "stable",
-					"source":    "community-operators",
-				},
-			},
-			"applications": map[string]interface{}{
-				"custom-app": map[string]interface{}{
-					"name":           "custom-app",
-					"namespace":      "custom-namespace",
-					"project":        "custom-project",
-					"path":           "custom/path",
-					"customAppField": "customAppValue",
-				},
-			},
-			"customClusterField": "customClusterValue",
-		},
-		"customTopLevel": map[string]interface{}{
-			"customKey": "customValue",
-		},
-	}
-
-	valuesPath := filepath.Join(tempDir, "values-prod.yaml")
-	initialYaml, err := yaml.Marshal(initialValues)
-	if err != nil {
-		t.Fatalf("Failed to marshal initial values: %v", err)
-	}
-	if err := os.WriteFile(valuesPath, initialYaml, 0o644); err != nil {
-		t.Fatalf("Failed to write initial values file: %v", err)
-	}
-
-	// Process the values
-	chartPaths := []string{"charts/app1", "charts/app2"}
-	err = ProcessClusterGroupValues("test-pattern", "prod", tempDir, chartPaths, false)
-	if err != nil {
-		t.Fatalf("ProcessClusterGroupValues failed: %v", err)
-	}
-
-	// Read the processed file
-	processedData, err := os.ReadFile(valuesPath)
-	if err != nil {
-		t.Fatalf("Failed to read processed file: %v", err)
-	}
-
-	var processedValues map[string]interface{}
-	if err := yaml.Unmarshal(processedData, &processedValues); err != nil {
-		t.Fatalf("Failed to unmarshal processed values: %v", err)
-	}
-
-	// Verify custom fields are preserved
-	tests := []struct {
-		path     []string
-		expected interface{}
-	}{
-		{[]string{"clusterGroup", "name"}, "prod"},
-		{[]string{"clusterGroup", "isHubCluster"}, true},
-		{[]string{"clusterGroup", "customClusterField"}, "customClusterValue"},
-		{[]string{"customTopLevel", "customKey"}, "customValue"},
-	}
-
-	for _, tt := range tests {
-		value := getNestedValue(processedValues, tt.path)
-		if value != tt.expected {
-			t.Errorf("Field %v = %v, expected %v", tt.path, value, tt.expected)
-		}
-	}
-
-	// Verify custom application fields are preserved
-	clusterGroup, ok := processedValues["clusterGroup"].(map[string]interface{})
-	if !ok {
-		t.Fatalf("clusterGroup is not a map")
-	}
-	applications, ok := clusterGroup["applications"].(map[string]interface{})
-	if !ok {
-		t.Fatalf("applications is not a map")
-	}
-	customApp, ok := applications["custom-app"].(map[string]interface{})
-	if !ok {
-		t.Fatalf("custom-app is not a map")
-	}
-	if customApp["customAppField"] != "customAppValue" {
-		t.Errorf("custom-app customAppField = %v, expected 'customAppValue'", customApp["customAppField"])
-	}
-
-	// Verify custom subscription is preserved
-	subscriptions, ok := clusterGroup["subscriptions"].(map[string]interface{})
-	if !ok {
-		t.Fatalf("subscriptions is not a map")
-	}
-	customSub, ok := subscriptions["custom-operator"].(map[string]interface{})
-	if !ok {
-		t.Fatalf("custom-operator subscription is not a map")
-	}
-	if customSub["channel"] != "stable" {
-		t.Errorf("custom-operator channel = %v, expected 'stable'", customSub["channel"])
-	}
-
-	// Verify new applications were added while preserving existing ones
-	if _, exists := applications["app1"]; !exists {
-		t.Error("Expected new application 'app1' to be added")
-	}
-	if _, exists := applications["app2"]; !exists {
-		t.Error("Expected new application 'app2' to be added")
-	}
-	if _, exists := applications["custom-app"]; !exists {
-		t.Error("Expected existing application 'custom-app' to be preserved")
-	}
-}
-
-// TestProcessGlobalValuesWithNewFile tests ProcessGlobalValues when no existing file exists.
-func TestProcessGlobalValuesWithNewFile(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "pattern-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	// Process values without existing file (test without secrets)
-	actualPatternName, clusterGroupName, err := ProcessGlobalValues("test-pattern", tempDir, false)
-	if err != nil {
-		t.Fatalf("ProcessGlobalValues failed: %v", err)
-	}
-
-	// Verify return values
-	if actualPatternName != "test-pattern" {
-		t.Errorf("Expected pattern name 'test-pattern', got '%s'", actualPatternName)
-	}
-	if clusterGroupName != "prod" { // Default cluster group name
-		t.Errorf("Expected cluster group name 'prod', got '%s'", clusterGroupName)
-	}
-
-	// Verify file was created with defaults
-	valuesPath := filepath.Join(tempDir, "values-global.yaml")
-	if _, err := os.Stat(valuesPath); os.IsNotExist(err) {
-		t.Fatal("values-global.yaml was not created")
-	}
-
-	// Read and verify content
-	data, err := os.ReadFile(valuesPath)
-	if err != nil {
-		t.Fatalf("Failed to read created file: %v", err)
-	}
-
-	var values types.ValuesGlobal
-	if err := yaml.Unmarshal(data, &values); err != nil {
-		t.Fatalf("Failed to unmarshal created file: %v", err)
-	}
-
-	if values.Global.Pattern != "test-pattern" {
-		t.Errorf("Global pattern = %s, expected 'test-pattern'", values.Global.Pattern)
-	}
-	if values.Main.ClusterGroupName != "prod" {
-		t.Errorf("Main clusterGroupName = %s, expected 'prod'", values.Main.ClusterGroupName)
-	}
-	if !values.Main.MultiSourceConfig.Enabled {
-		t.Error("MultiSourceConfig.Enabled should be true by default")
-	}
-	if values.Main.MultiSourceConfig.ClusterGroupChartVersion != "0.9.*" {
-		t.Errorf("ClusterGroupChartVersion = %s, expected '0.9.*'", values.Main.MultiSourceConfig.ClusterGroupChartVersion)
-	}
-	if !values.Global.SecretLoader.Disabled {
-		t.Error("SecretLoader.Disabled should be true when withSecrets=false")
-	}
-}
-
-// TestProcessGlobalValuesWithSecrets tests ProcessGlobalValues with withSecrets=true.
-func TestProcessGlobalValuesWithSecrets(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "pattern-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	// Process values without existing file (test with secrets)
-	actualPatternName, clusterGroupName, err := ProcessGlobalValues("test-pattern", tempDir, true)
-	if err != nil {
-		t.Fatalf("ProcessGlobalValues failed: %v", err)
-	}
-
-	// Verify return values
-	if actualPatternName != "test-pattern" {
-		t.Errorf("Expected pattern name 'test-pattern', got '%s'", actualPatternName)
-	}
-	if clusterGroupName != "prod" { // Default cluster group name
-		t.Errorf("Expected cluster group name 'prod', got '%s'", clusterGroupName)
-	}
-
-	// Verify file was created with defaults
-	valuesPath := filepath.Join(tempDir, "values-global.yaml")
-	if _, err := os.Stat(valuesPath); os.IsNotExist(err) {
-		t.Fatal("values-global.yaml was not created")
-	}
-
-	// Read and verify content
-	data, err := os.ReadFile(valuesPath)
-	if err != nil {
-		t.Fatalf("Failed to read created file: %v", err)
-	}
-
-	var values types.ValuesGlobal
-	if err := yaml.Unmarshal(data, &values); err != nil {
-		t.Fatalf("Failed to unmarshal created file: %v", err)
-	}
-
-	if values.Global.Pattern != "test-pattern" {
-		t.Errorf("Global pattern = %s, expected 'test-pattern'", values.Global.Pattern)
-	}
-	if values.Global.SecretLoader.Disabled {
-		t.Error("SecretLoader.Disabled should be false when withSecrets=true")
-	}
-}
 
 // getNestedValue is a helper function to get nested values from a map using a path.
 func getNestedValue(m map[string]interface{}, path []string) interface{} {
@@ -365,3 +26,293 @@ func getNestedValue(m map[string]interface{}, path []string) interface{} {
 	}
 	return nil
 }
+
+var _ = Describe("ProcessGlobalValues", func() {
+	Context("with an existing values file containing custom fields", func() {
+		var (
+			tempDir    string
+			valuesPath string
+		)
+
+		BeforeEach(func() {
+			var err error
+			tempDir, err = os.MkdirTemp("", "pattern-test-*")
+			Expect(err).NotTo(HaveOccurred())
+
+			initialValues := map[string]interface{}{
+				"global": map[string]interface{}{
+					"pattern":     "existing-pattern",
+					"customField": "customValue",
+					"nestedCustom": map[string]interface{}{
+						"key1": "value1",
+						"key2": 42,
+					},
+				},
+				"main": map[string]interface{}{
+					"clusterGroupName": "custom-cluster-group",
+					"multiSourceConfig": map[string]interface{}{
+						"enabled":                  false,
+						"clusterGroupChartVersion": "1.0.*",
+						"customMultiSource":        "customValue",
+					},
+					"customMainField": "mainCustomValue",
+				},
+				"customTopLevel": map[string]interface{}{
+					"someKey":    "someValue",
+					"anotherKey": []string{"item1", "item2"},
+				},
+			}
+
+			valuesPath = filepath.Join(tempDir, "values-global.yaml")
+			initialYaml, err := yaml.Marshal(initialValues)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(os.WriteFile(valuesPath, initialYaml, 0o644)).To(Succeed())
+		})
+
+		AfterEach(func() {
+			os.RemoveAll(tempDir)
+		})
+
+		It("should preserve all custom fields", func() {
+			actualPatternName, clusterGroupName, err := ProcessGlobalValues("new-pattern", tempDir, false)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(actualPatternName).To(Equal("existing-pattern"))
+			Expect(clusterGroupName).To(Equal("custom-cluster-group"))
+
+			processedData, err := os.ReadFile(valuesPath)
+			Expect(err).NotTo(HaveOccurred())
+
+			var processedValues map[string]interface{}
+			Expect(yaml.Unmarshal(processedData, &processedValues)).To(Succeed())
+
+			tests := []struct {
+				path     []string
+				expected interface{}
+			}{
+				{[]string{"global", "pattern"}, "existing-pattern"},
+				{[]string{"global", "customField"}, "customValue"},
+				{[]string{"global", "nestedCustom", "key1"}, "value1"},
+				{[]string{"global", "nestedCustom", "key2"}, 42},
+				{[]string{"main", "clusterGroupName"}, "custom-cluster-group"},
+				{[]string{"main", "multiSourceConfig", "enabled"}, false},
+				{[]string{"main", "multiSourceConfig", "clusterGroupChartVersion"}, "1.0.*"},
+				{[]string{"main", "multiSourceConfig", "customMultiSource"}, "customValue"},
+				{[]string{"main", "customMainField"}, "mainCustomValue"},
+				{[]string{"customTopLevel", "someKey"}, "someValue"},
+			}
+
+			for _, tt := range tests {
+				Expect(getNestedValue(processedValues, tt.path)).To(Equal(tt.expected),
+					"Field %v should be %v", tt.path, tt.expected)
+			}
+
+			// Verify array field is preserved
+			customTopLevel, ok := processedValues["customTopLevel"].(map[string]interface{})
+			Expect(ok).To(BeTrue(), "customTopLevel should be a map")
+			anotherKey, ok := customTopLevel["anotherKey"].([]interface{})
+			Expect(ok).To(BeTrue(), "anotherKey should be an array")
+			Expect(anotherKey).To(Equal([]interface{}{"item1", "item2"}))
+		})
+	})
+
+	Context("when no existing file exists", func() {
+		var tempDir string
+
+		BeforeEach(func() {
+			var err error
+			tempDir, err = os.MkdirTemp("", "pattern-test-*")
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			os.RemoveAll(tempDir)
+		})
+
+		It("should create the file with defaults", func() {
+			actualPatternName, clusterGroupName, err := ProcessGlobalValues("test-pattern", tempDir, false)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(actualPatternName).To(Equal("test-pattern"))
+			Expect(clusterGroupName).To(Equal("prod"))
+
+			valuesPath := filepath.Join(tempDir, "values-global.yaml")
+			Expect(valuesPath).To(BeAnExistingFile())
+
+			data, err := os.ReadFile(valuesPath)
+			Expect(err).NotTo(HaveOccurred())
+
+			var values types.ValuesGlobal
+			Expect(yaml.Unmarshal(data, &values)).To(Succeed())
+
+			Expect(values.Global.Pattern).To(Equal("test-pattern"))
+			Expect(values.Main.ClusterGroupName).To(Equal("prod"))
+			Expect(values.Main.MultiSourceConfig.Enabled).To(BeTrue())
+			Expect(values.Main.MultiSourceConfig.ClusterGroupChartVersion).To(Equal("0.9.*"))
+			Expect(values.Global.SecretLoader.Disabled).To(BeTrue())
+		})
+	})
+
+	Context("with secrets enabled", func() {
+		var tempDir string
+
+		BeforeEach(func() {
+			var err error
+			tempDir, err = os.MkdirTemp("", "pattern-test-*")
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			os.RemoveAll(tempDir)
+		})
+
+		It("should set SecretLoader.Disabled to false", func() {
+			actualPatternName, clusterGroupName, err := ProcessGlobalValues("test-pattern", tempDir, true)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(actualPatternName).To(Equal("test-pattern"))
+			Expect(clusterGroupName).To(Equal("prod"))
+
+			valuesPath := filepath.Join(tempDir, "values-global.yaml")
+			Expect(valuesPath).To(BeAnExistingFile())
+
+			data, err := os.ReadFile(valuesPath)
+			Expect(err).NotTo(HaveOccurred())
+
+			var values types.ValuesGlobal
+			Expect(yaml.Unmarshal(data, &values)).To(Succeed())
+
+			Expect(values.Global.Pattern).To(Equal("test-pattern"))
+			Expect(values.Global.SecretLoader.Disabled).To(BeFalse())
+		})
+	})
+})
+
+var _ = Describe("ProcessClusterGroupValues", func() {
+	Context("with an existing values file containing custom fields", func() {
+		var (
+			tempDir    string
+			valuesPath string
+		)
+
+		BeforeEach(func() {
+			var err error
+			tempDir, err = os.MkdirTemp("", "pattern-test-*")
+			Expect(err).NotTo(HaveOccurred())
+
+			initialValues := map[string]interface{}{
+				"clusterGroup": map[string]interface{}{
+					"name":         "prod",
+					"isHubCluster": true,
+					"namespaces":   []interface{}{"custom-ns1", "custom-ns2"},
+					"projects":     []interface{}{"custom-proj1", "custom-proj2"},
+					"subscriptions": map[string]interface{}{
+						"custom-operator": map[string]interface{}{
+							"name":      "custom-operator",
+							"namespace": "custom-namespace",
+							"channel":   "stable",
+							"source":    "community-operators",
+						},
+					},
+					"applications": map[string]interface{}{
+						"custom-app": map[string]interface{}{
+							"name":           "custom-app",
+							"namespace":      "custom-namespace",
+							"project":        "custom-project",
+							"path":           "custom/path",
+							"customAppField": "customAppValue",
+						},
+					},
+					"customClusterField": "customClusterValue",
+				},
+				"customTopLevel": map[string]interface{}{
+					"customKey": "customValue",
+				},
+			}
+
+			valuesPath = filepath.Join(tempDir, "values-prod.yaml")
+			initialYaml, err := yaml.Marshal(initialValues)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(os.WriteFile(valuesPath, initialYaml, 0o644)).To(Succeed())
+		})
+
+		AfterEach(func() {
+			os.RemoveAll(tempDir)
+		})
+
+		It("should preserve custom fields", func() {
+			chartPaths := []string{"charts/app1", "charts/app2"}
+			Expect(ProcessClusterGroupValues("test-pattern", "prod", tempDir, chartPaths, false)).To(Succeed())
+
+			processedData, err := os.ReadFile(valuesPath)
+			Expect(err).NotTo(HaveOccurred())
+
+			var processedValues map[string]interface{}
+			Expect(yaml.Unmarshal(processedData, &processedValues)).To(Succeed())
+
+			tests := []struct {
+				path     []string
+				expected interface{}
+			}{
+				{[]string{"clusterGroup", "name"}, "prod"},
+				{[]string{"clusterGroup", "isHubCluster"}, true},
+				{[]string{"clusterGroup", "customClusterField"}, "customClusterValue"},
+				{[]string{"customTopLevel", "customKey"}, "customValue"},
+			}
+
+			for _, tt := range tests {
+				Expect(getNestedValue(processedValues, tt.path)).To(Equal(tt.expected),
+					"Field %v should be %v", tt.path, tt.expected)
+			}
+		})
+
+		It("should preserve custom application fields", func() {
+			chartPaths := []string{"charts/app1", "charts/app2"}
+			Expect(ProcessClusterGroupValues("test-pattern", "prod", tempDir, chartPaths, false)).To(Succeed())
+
+			processedData, err := os.ReadFile(valuesPath)
+			Expect(err).NotTo(HaveOccurred())
+
+			var processedValues map[string]interface{}
+			Expect(yaml.Unmarshal(processedData, &processedValues)).To(Succeed())
+
+			clusterGroup := processedValues["clusterGroup"].(map[string]interface{})
+			applications := clusterGroup["applications"].(map[string]interface{})
+
+			customApp := applications["custom-app"].(map[string]interface{})
+			Expect(customApp["customAppField"]).To(Equal("customAppValue"))
+		})
+
+		It("should preserve custom subscriptions", func() {
+			chartPaths := []string{"charts/app1", "charts/app2"}
+			Expect(ProcessClusterGroupValues("test-pattern", "prod", tempDir, chartPaths, false)).To(Succeed())
+
+			processedData, err := os.ReadFile(valuesPath)
+			Expect(err).NotTo(HaveOccurred())
+
+			var processedValues map[string]interface{}
+			Expect(yaml.Unmarshal(processedData, &processedValues)).To(Succeed())
+
+			clusterGroup := processedValues["clusterGroup"].(map[string]interface{})
+			subscriptions := clusterGroup["subscriptions"].(map[string]interface{})
+
+			customSub := subscriptions["custom-operator"].(map[string]interface{})
+			Expect(customSub["channel"]).To(Equal("stable"))
+		})
+
+		It("should add new applications while preserving existing ones", func() {
+			chartPaths := []string{"charts/app1", "charts/app2"}
+			Expect(ProcessClusterGroupValues("test-pattern", "prod", tempDir, chartPaths, false)).To(Succeed())
+
+			processedData, err := os.ReadFile(valuesPath)
+			Expect(err).NotTo(HaveOccurred())
+
+			var processedValues map[string]interface{}
+			Expect(yaml.Unmarshal(processedData, &processedValues)).To(Succeed())
+
+			clusterGroup := processedValues["clusterGroup"].(map[string]interface{})
+			applications := clusterGroup["applications"].(map[string]interface{})
+
+			Expect(applications).To(HaveKey("app1"))
+			Expect(applications).To(HaveKey("app2"))
+			Expect(applications).To(HaveKey("custom-app"))
+		})
+	})
+})

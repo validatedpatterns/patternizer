@@ -3,6 +3,7 @@ package types
 import (
 	"fmt"
 	"path/filepath"
+	"reflect"
 
 	"gopkg.in/yaml.v3"
 )
@@ -46,20 +47,17 @@ func (ne NamespaceEntry) GetString() (string, bool) {
 
 // Equal compares two NamespaceEntry values for equality
 func (ne NamespaceEntry) Equal(other NamespaceEntry) bool {
-	// Simple comparison - could be enhanced for deep map comparison if needed
-	if str1, ok1 := ne.GetString(); ok1 {
-		if str2, ok2 := other.GetString(); ok2 {
-			return str1 == str2
-		}
-	}
-	// For maps or other complex types, we'd need deeper comparison
-	// For now, assume they're different if not both strings
-	return false
+	return reflect.DeepEqual(ne.value, other.value)
 }
 
 // NewNamespaceEntry creates a new NamespaceEntry from a string
 func NewNamespaceEntry(namespace string) NamespaceEntry {
 	return NamespaceEntry{value: namespace}
+}
+
+// NewMapNamespaceEntry creates a new NamespaceEntry from a map
+func NewMapNamespaceEntry(m map[string]interface{}) NamespaceEntry {
+	return NamespaceEntry{value: m}
 }
 
 // Application defines the structure for an ArgoCD application entry.
@@ -103,20 +101,37 @@ type ValuesClusterGroup struct {
 func NewDefaultValuesClusterGroup(patternName, clusterGroupName string, chartPaths []string, useSecrets bool) *ValuesClusterGroup {
 	namespaces := []NamespaceEntry{NewNamespaceEntry(patternName)}
 	applications := make(map[string]Application)
+	subscriptions := make(map[string]Subscription)
 
 	if useSecrets {
-		namespaces = append(namespaces, NewNamespaceEntry("vault"), NewNamespaceEntry("golang-external-secrets"))
+		namespaces = append(
+			namespaces,
+			NewNamespaceEntry("vault"),
+			NamespaceEntry{map[string]interface{}{
+				"external-secrets-operator": map[string]interface{}{
+					"operatorGroup":    true,
+					"targetNamespaces": []string{},
+				},
+			},
+			},
+			NewNamespaceEntry("external-secrets"),
+		)
+		subscriptions["eso"] = Subscription{
+			Name:      "openshift-external-secrets-operator",
+			Namespace: "external-secrets-operator",
+			Channel:   "stable-v1",
+		}
 		applications["vault"] = Application{
 			Name:         "vault",
 			Namespace:    "vault",
 			Chart:        "hashicorp-vault",
 			ChartVersion: "0.1.*",
 		}
-		applications["golang-external-secrets"] = Application{
-			Name:         "golang-external-secrets",
-			Namespace:    "golang-external-secrets",
-			Chart:        "golang-external-secrets",
-			ChartVersion: "0.1.*",
+		applications["openshift-external-secrets"] = Application{
+			Name:         "openshift-external-secrets",
+			Namespace:    "external-secrets",
+			Chart:        "openshift-external-secrets",
+			ChartVersion: "0.0.*",
 		}
 	}
 
@@ -134,7 +149,7 @@ func NewDefaultValuesClusterGroup(patternName, clusterGroupName string, chartPat
 		ClusterGroup: ClusterGroup{
 			Name:          clusterGroupName,
 			Namespaces:    namespaces,
-			Subscriptions: make(map[string]Subscription),
+			Subscriptions: subscriptions,
 			Applications:  applications,
 			OtherFields:   make(map[string]interface{}),
 		},

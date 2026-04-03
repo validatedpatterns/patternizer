@@ -322,9 +322,21 @@ var _ = Describe("patternizer init --with-secrets", func() {
 					Namespaces: []types.NamespaceEntry{
 						types.NewNamespaceEntry(filepath.Base(tempDir)),
 						types.NewNamespaceEntry("vault"),
-						types.NewNamespaceEntry("golang-external-secrets"),
+						types.NewMapNamespaceEntry(map[string]interface{}{
+							"external-secrets-operator": map[string]interface{}{
+								"operatorGroup":    true,
+								"targetNamespaces": []interface{}{},
+							},
+						}),
+						types.NewNamespaceEntry("external-secrets"),
 					},
-					Subscriptions: map[string]types.Subscription{},
+					Subscriptions: map[string]types.Subscription{
+						"eso": {
+							Name:      "openshift-external-secrets-operator",
+							Namespace: "external-secrets-operator",
+							Channel:   "stable-v1",
+						},
+					},
 					Applications: map[string]types.Application{
 						"vault": {
 							Name:         "vault",
@@ -332,11 +344,11 @@ var _ = Describe("patternizer init --with-secrets", func() {
 							Chart:        "hashicorp-vault",
 							ChartVersion: "0.1.*",
 						},
-						"golang-external-secrets": {
-							Name:         "golang-external-secrets",
-							Namespace:    "golang-external-secrets",
-							Chart:        "golang-external-secrets",
-							ChartVersion: "0.1.*",
+						"openshift-external-secrets": {
+							Name:         "openshift-external-secrets",
+							Namespace:    "external-secrets",
+							Chart:        "openshift-external-secrets",
+							ChartVersion: "0.0.*",
 						},
 					},
 				},
@@ -396,9 +408,21 @@ var _ = Describe("patternizer init --with-secrets", func() {
 					Namespaces: []types.NamespaceEntry{
 						types.NewNamespaceEntry(expectedNamespace),
 						types.NewNamespaceEntry("vault"),
-						types.NewNamespaceEntry("golang-external-secrets"),
+						types.NewMapNamespaceEntry(map[string]interface{}{
+							"external-secrets-operator": map[string]interface{}{
+								"operatorGroup":    true,
+								"targetNamespaces": []interface{}{},
+							},
+						}),
+						types.NewNamespaceEntry("external-secrets"),
 					},
-					Subscriptions: map[string]types.Subscription{},
+					Subscriptions: map[string]types.Subscription{
+						"eso": {
+							Name:      "openshift-external-secrets-operator",
+							Namespace: "external-secrets-operator",
+							Channel:   "stable-v1",
+						},
+					},
 					Applications: map[string]types.Application{
 						"test-app1": {
 							Name:      "test-app1",
@@ -416,11 +440,11 @@ var _ = Describe("patternizer init --with-secrets", func() {
 							Chart:        "hashicorp-vault",
 							ChartVersion: "0.1.*",
 						},
-						"golang-external-secrets": {
-							Name:         "golang-external-secrets",
-							Namespace:    "golang-external-secrets",
-							Chart:        "golang-external-secrets",
-							ChartVersion: "0.1.*",
+						"openshift-external-secrets": {
+							Name:         "openshift-external-secrets",
+							Namespace:    "external-secrets",
+							Chart:        "openshift-external-secrets",
+							ChartVersion: "0.0.*",
 						},
 					},
 				},
@@ -478,9 +502,21 @@ var _ = Describe("patternizer init --with-secrets", func() {
 					Namespaces: []types.NamespaceEntry{
 						types.NewNamespaceEntry("test-pattern"),
 						types.NewNamespaceEntry("vault"),
-						types.NewNamespaceEntry("golang-external-secrets"),
+						types.NewMapNamespaceEntry(map[string]interface{}{
+							"external-secrets-operator": map[string]interface{}{
+								"operatorGroup":    true,
+								"targetNamespaces": []interface{}{},
+							},
+						}),
+						types.NewNamespaceEntry("external-secrets"),
 					},
-					Subscriptions: map[string]types.Subscription{},
+					Subscriptions: map[string]types.Subscription{
+						"eso": {
+							Name:      "openshift-external-secrets-operator",
+							Namespace: "external-secrets-operator",
+							Channel:   "stable-v1",
+						},
+					},
 					Applications: map[string]types.Application{
 						"vault": {
 							Name:         "vault",
@@ -488,11 +524,11 @@ var _ = Describe("patternizer init --with-secrets", func() {
 							Chart:        "hashicorp-vault",
 							ChartVersion: "0.1.*",
 						},
-						"golang-external-secrets": {
-							Name:         "golang-external-secrets",
-							Namespace:    "golang-external-secrets",
-							Chart:        "golang-external-secrets",
-							ChartVersion: "0.1.*",
+						"openshift-external-secrets": {
+							Name:         "openshift-external-secrets",
+							Namespace:    "external-secrets",
+							Chart:        "openshift-external-secrets",
+							ChartVersion: "0.0.*",
 						},
 					},
 				},
@@ -549,9 +585,21 @@ var _ = Describe("patternizer init --with-secrets", func() {
 					Namespaces: []types.NamespaceEntry{
 						types.NewNamespaceEntry(expectedNamespace),
 						types.NewNamespaceEntry("vault"),
-						types.NewNamespaceEntry("golang-external-secrets"),
+						types.NewMapNamespaceEntry(map[string]interface{}{
+							"external-secrets-operator": map[string]interface{}{
+								"operatorGroup":    true,
+								"targetNamespaces": []interface{}{},
+							},
+						}),
+						types.NewNamespaceEntry("external-secrets"),
 					},
-					Subscriptions: map[string]types.Subscription{},
+					Subscriptions: map[string]types.Subscription{
+						"eso": {
+							Name:      "openshift-external-secrets-operator",
+							Namespace: "external-secrets-operator",
+							Channel:   "stable-v1",
+						},
+					},
 					Applications: map[string]types.Application{
 						"test-app1": {
 							Name:      "test-app1",
@@ -569,11 +617,11 @@ var _ = Describe("patternizer init --with-secrets", func() {
 							Chart:        "hashicorp-vault",
 							ChartVersion: "0.1.*",
 						},
-						"golang-external-secrets": {
-							Name:         "golang-external-secrets",
-							Namespace:    "golang-external-secrets",
-							Chart:        "golang-external-secrets",
-							ChartVersion: "0.1.*",
+						"openshift-external-secrets": {
+							Name:         "openshift-external-secrets",
+							Namespace:    "external-secrets",
+							Chart:        "openshift-external-secrets",
+							ChartVersion: "0.0.*",
 						},
 					},
 				},
@@ -632,9 +680,21 @@ var _ = Describe("patternizer init --with-secrets", func() {
 					Namespaces: []types.NamespaceEntry{
 						types.NewNamespaceEntry("test-pattern"),
 						types.NewNamespaceEntry("vault"),
-						types.NewNamespaceEntry("golang-external-secrets"),
+						types.NewMapNamespaceEntry(map[string]interface{}{
+							"external-secrets-operator": map[string]interface{}{
+								"operatorGroup":    true,
+								"targetNamespaces": []interface{}{},
+							},
+						}),
+						types.NewNamespaceEntry("external-secrets"),
 					},
-					Subscriptions: map[string]types.Subscription{},
+					Subscriptions: map[string]types.Subscription{
+						"eso": {
+							Name:      "openshift-external-secrets-operator",
+							Namespace: "external-secrets-operator",
+							Channel:   "stable-v1",
+						},
+					},
 					Applications: map[string]types.Application{
 						"custom-user-app": {
 							Name:        "custom-user-app",
@@ -649,11 +709,11 @@ var _ = Describe("patternizer init --with-secrets", func() {
 							Chart:        "hashicorp-vault",
 							ChartVersion: "0.1.*",
 						},
-						"golang-external-secrets": {
-							Name:         "golang-external-secrets",
-							Namespace:    "golang-external-secrets",
-							Chart:        "golang-external-secrets",
-							ChartVersion: "0.1.*",
+						"openshift-external-secrets": {
+							Name:         "openshift-external-secrets",
+							Namespace:    "external-secrets",
+							Chart:        "openshift-external-secrets",
+							ChartVersion: "0.0.*",
 						},
 					},
 					OtherFields: map[string]interface{}{"customClusterField": "user-cluster-config"},
