@@ -62,17 +62,22 @@ func TestNewDefaultValuesClusterGroup(t *testing.T) {
 	// Test with secrets
 	valuesWithSecrets := types.NewDefaultValuesClusterGroup("test-pattern", "test-group", []string{"charts/app1"}, true)
 
-	expectedNamespacesWithSecrets := []string{"test-pattern", "vault", "golang-external-secrets"}
+	expectedNamespacesWithSecrets := []string{"test-pattern", "vault", "external-secrets-operator", "external-secrets"}
 	if len(valuesWithSecrets.ClusterGroup.Namespaces) != len(expectedNamespacesWithSecrets) {
 		t.Errorf("Expected %d namespaces with secrets, got %d", len(expectedNamespacesWithSecrets), len(valuesWithSecrets.ClusterGroup.Namespaces))
 	}
 
-	// Check that vault and golang-external-secrets applications are added
+	// Check that vault and openshift-external-secrets applications are added
 	if _, exists := valuesWithSecrets.ClusterGroup.Applications["vault"]; !exists {
 		t.Error("Expected vault application to be present with secrets")
 	}
 
-	if _, exists := valuesWithSecrets.ClusterGroup.Applications["golang-external-secrets"]; !exists {
-		t.Error("Expected golang-external-secrets application to be present with secrets")
+	if _, exists := valuesWithSecrets.ClusterGroup.Applications["openshift-external-secrets"]; !exists {
+		t.Error("Expected openshift-external-secrets application to be present with secrets")
+	}
+
+	// Check that eso subscription is added
+	if _, exists := valuesWithSecrets.ClusterGroup.Subscriptions["eso"]; !exists {
+		t.Error("Expected eso subscription to be present with secrets")
 	}
 }
