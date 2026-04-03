@@ -2,82 +2,75 @@ package main
 
 import (
 	"os"
-	"testing"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	"github.com/validatedpatterns/patternizer/internal/fileutils"
 	"github.com/validatedpatterns/patternizer/internal/types"
 )
 
-func TestGetResourcePath(t *testing.T) {
-	// Test with environment variable set
-	os.Setenv("PATTERNIZER_RESOURCES_DIR", "/tmp/test")
-	path, err := fileutils.GetResourcesPath()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	if path != "/tmp/test" {
-		t.Fatalf("Expected /tmp/test, got %s", path)
-	}
+var _ = Describe("GetResourcePath", func() {
+	AfterEach(func() {
+		os.Unsetenv("PATTERNIZER_RESOURCES_DIR")
+	})
 
-	// Test with environment variable unset
-	os.Unsetenv("PATTERNIZER_RESOURCES_DIR")
-	path, err = fileutils.GetResourcesPath()
-	if err == nil {
-		t.Fatal("Expected error, got nil")
-	}
-	if path != "" {
-		t.Fatalf("Expected empty path, got %s", path)
-	}
-}
+	It("should return the path when the environment variable is set", func() {
+		os.Setenv("PATTERNIZER_RESOURCES_DIR", "/tmp/test")
+		path, err := fileutils.GetResourcesPath()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(path).To(Equal("/tmp/test"))
+	})
 
-func TestNewDefaultValuesGlobal(t *testing.T) {
-	values := types.NewDefaultValuesGlobal()
+	It("should return an error when the environment variable is unset", func() {
+		os.Unsetenv("PATTERNIZER_RESOURCES_DIR")
+		path, err := fileutils.GetResourcesPath()
+		Expect(err).To(HaveOccurred())
+		Expect(path).To(BeEmpty())
+	})
+})
 
-	if values.Main.ClusterGroupName != "prod" {
-		t.Errorf("Expected clusterGroupName to be 'prod', got '%s'", values.Main.ClusterGroupName)
-	}
+var _ = Describe("NewDefaultValuesGlobal", func() {
+	It("should create default global values with expected defaults", func() {
+		values := types.NewDefaultValuesGlobal()
 
-	if !values.Main.MultiSourceConfig.Enabled {
-		t.Error("Expected multiSourceConfig.enabled to be true")
-	}
+		Expect(values.Main.ClusterGroupName).To(Equal("prod"))
+		Expect(values.Main.MultiSourceConfig.Enabled).To(BeTrue())
+		Expect(values.Main.MultiSourceConfig.ClusterGroupChartVersion).To(Equal("0.9.*"))
+	})
+})
 
-	if values.Main.MultiSourceConfig.ClusterGroupChartVersion != "0.9.*" {
-		t.Errorf("Expected clusterGroupChartVersion to be '0.9.*', got '%s'", values.Main.MultiSourceConfig.ClusterGroupChartVersion)
-	}
-}
+var _ = Describe("NewDefaultValuesClusterGroup", func() {
+	Context("without secrets", func() {
+		It("should create a cluster group with the correct name and namespaces", func() {
+			values := types.NewDefaultValuesClusterGroup("test-pattern", "test-group", []string{"charts/app1", "charts/app2"}, false)
 
-func TestNewDefaultValuesClusterGroup(t *testing.T) {
-	// Test without secrets
-	values := types.NewDefaultValuesClusterGroup("test-pattern", "test-group", []string{"charts/app1", "charts/app2"}, false)
+			Expect(values.ClusterGroup.Name).To(Equal("test-group"))
+			Expect(values.ClusterGroup.Namespaces).To(HaveLen(1))
+		})
+	})
 
-	if values.ClusterGroup.Name != "test-group" {
-		t.Errorf("Expected name to be 'test-group', got '%s'", values.ClusterGroup.Name)
-	}
+	Context("with secrets", func() {
+		var valuesWithSecrets *types.ValuesClusterGroup
 
-	expectedNamespaces := []string{"test-pattern"}
-	if len(values.ClusterGroup.Namespaces) != len(expectedNamespaces) {
-		t.Errorf("Expected %d namespaces, got %d", len(expectedNamespaces), len(values.ClusterGroup.Namespaces))
-	}
+		BeforeEach(func() {
+			valuesWithSecrets = types.NewDefaultValuesClusterGroup("test-pattern", "test-group", []string{"charts/app1"}, true)
+		})
 
-	// Test with secrets
-	valuesWithSecrets := types.NewDefaultValuesClusterGroup("test-pattern", "test-group", []string{"charts/app1"}, true)
+		It("should include all expected namespaces", func() {
+			Expect(valuesWithSecrets.ClusterGroup.Namespaces).To(HaveLen(4))
+		})
 
-	expectedNamespacesWithSecrets := []string{"test-pattern", "vault", "external-secrets-operator", "external-secrets"}
-	if len(valuesWithSecrets.ClusterGroup.Namespaces) != len(expectedNamespacesWithSecrets) {
-		t.Errorf("Expected %d namespaces with secrets, got %d", len(expectedNamespacesWithSecrets), len(valuesWithSecrets.ClusterGroup.Namespaces))
-	}
+		It("should include the vault application", func() {
+			Expect(valuesWithSecrets.ClusterGroup.Applications).To(HaveKey("vault"))
+		})
 
-	// Check that vault and openshift-external-secrets applications are added
-	if _, exists := valuesWithSecrets.ClusterGroup.Applications["vault"]; !exists {
-		t.Error("Expected vault application to be present with secrets")
-	}
+		It("should include the openshift-external-secrets application", func() {
+			Expect(valuesWithSecrets.ClusterGroup.Applications).To(HaveKey("openshift-external-secrets"))
+		})
 
-	if _, exists := valuesWithSecrets.ClusterGroup.Applications["openshift-external-secrets"]; !exists {
-		t.Error("Expected openshift-external-secrets application to be present with secrets")
-	}
-
-	// Check that eso subscription is added
-	if _, exists := valuesWithSecrets.ClusterGroup.Subscriptions["eso"]; !exists {
-		t.Error("Expected eso subscription to be present with secrets")
-	}
-}
+		It("should include the eso subscription", func() {
+			Expect(valuesWithSecrets.ClusterGroup.Subscriptions).To(HaveKey("eso"))
+		})
+	})
+})

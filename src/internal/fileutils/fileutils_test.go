@@ -5,296 +5,219 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"testing"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v3"
 )
 
-func writeFileWithMode(t *testing.T, path, content string, mode os.FileMode) {
-	t.Helper()
-	if err := os.WriteFile(path, []byte(content), 0o600); err != nil { // initial perms don't matter
-		t.Fatalf("write file failed: %v", err)
-	}
-	if err := os.Chmod(path, mode); err != nil {
-		t.Fatalf("chmod failed: %v", err)
-	}
+func writeFileWithMode(path, content string, mode os.FileMode) {
+	Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
+	Expect(os.Chmod(path, mode)).To(Succeed())
 }
 
-func TestCopyFile_CopiesContentsAndMode(t *testing.T) {
-	dir := t.TempDir()
-	src := filepath.Join(dir, "src.txt")
-	dst := filepath.Join(dir, "dst.txt")
+var _ = Describe("CopyFile", func() {
+	It("should copy contents and preserve file mode", func() {
+		dir := GinkgoT().TempDir()
+		src := filepath.Join(dir, "src.txt")
+		dst := filepath.Join(dir, "dst.txt")
 
-	content := "hello world"
-	srcMode := os.FileMode(0o640)
-	writeFileWithMode(t, src, content, srcMode)
+		content := "hello world"
+		srcMode := os.FileMode(0o640)
+		writeFileWithMode(src, content, srcMode)
 
-	if err := CopyFile(src, dst); err != nil {
-		t.Fatalf("CopyFile failed: %v", err)
-	}
+		Expect(CopyFile(src, dst)).To(Succeed())
 
-	got, err := os.ReadFile(dst)
-	if err != nil {
-		t.Fatalf("read dst failed: %v", err)
-	}
-	if string(got) != content {
-		t.Fatalf("unexpected content: %q", string(got))
-	}
+		got, err := os.ReadFile(dst)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(string(got)).To(Equal(content))
 
-	info, err := os.Stat(dst)
-	if err != nil {
-		t.Fatalf("stat dst failed: %v", err)
-	}
-	// Compare permissions only (mask out non-permission bits)
-	if info.Mode().Perm() != srcMode.Perm() {
-		t.Fatalf("mode mismatch: got %v want %v", info.Mode().Perm(), srcMode.Perm())
-	}
-}
+		info, err := os.Stat(dst)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(info.Mode().Perm()).To(Equal(srcMode.Perm()))
+	})
+})
 
-func TestHandleSecretsSetup_CopiesWhenMissing_DoesNotOverwriteWhenPresent(t *testing.T) {
-	resources := t.TempDir()
-	repoRoot := t.TempDir()
+var _ = Describe("HandleSecretsSetup", func() {
+	It("should copy template when missing and not overwrite when present", func() {
+		resources := GinkgoT().TempDir()
+		repoRoot := GinkgoT().TempDir()
 
-	templatePath := filepath.Join(resources, "values-secret.yaml.template")
-	originalContent := "foo: bar\n"
-	if err := os.WriteFile(templatePath, []byte(originalContent), 0o644); err != nil {
-		t.Fatalf("write template failed: %v", err)
-	}
+		templatePath := filepath.Join(resources, "values-secret.yaml.template")
+		originalContent := "foo: bar\n"
+		Expect(os.WriteFile(templatePath, []byte(originalContent), 0o644)).To(Succeed())
 
-	// First call should copy
-	if err := HandleSecretsSetup(resources, repoRoot); err != nil {
-		t.Fatalf("HandleSecretsSetup failed: %v", err)
-	}
-	copied := filepath.Join(repoRoot, "values-secret.yaml.template")
-	data, err := os.ReadFile(copied)
-	if err != nil {
-		t.Fatalf("read copied failed: %v", err)
-	}
-	if string(data) != originalContent {
-		t.Fatalf("unexpected copied content: %q", string(data))
-	}
+		// First call should copy
+		Expect(HandleSecretsSetup(resources, repoRoot)).To(Succeed())
+		copied := filepath.Join(repoRoot, "values-secret.yaml.template")
+		data, err := os.ReadFile(copied)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(string(data)).To(Equal(originalContent))
 
-	// Change the source and call again; destination should remain unchanged
-	if err := os.WriteFile(templatePath, []byte("baz: qux\n"), 0o644); err != nil {
-		t.Fatalf("rewrite template failed: %v", err)
-	}
-	if err := HandleSecretsSetup(resources, repoRoot); err != nil {
-		t.Fatalf("HandleSecretsSetup second call failed: %v", err)
-	}
-	data2, err := os.ReadFile(copied)
-	if err != nil {
-		t.Fatalf("read copied again failed: %v", err)
-	}
-	if string(data2) != originalContent {
-		t.Fatalf("destination was overwritten unexpectedly: %q", string(data2))
-	}
-}
+		// Change the source and call again; destination should remain unchanged
+		Expect(os.WriteFile(templatePath, []byte("baz: qux\n"), 0o644)).To(Succeed())
+		Expect(HandleSecretsSetup(resources, repoRoot)).To(Succeed())
+		data2, err := os.ReadFile(copied)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(string(data2)).To(Equal(originalContent))
+	})
+})
 
-func TestGetResourcesPath_EnvSetAndUnset(t *testing.T) {
-	old := os.Getenv("PATTERNIZER_RESOURCES_DIR")
-	t.Cleanup(func() { _ = os.Setenv("PATTERNIZER_RESOURCES_DIR", old) })
+var _ = Describe("GetResourcesPath", func() {
+	It("should return the path when the environment variable is set", func() {
+		old := os.Getenv("PATTERNIZER_RESOURCES_DIR")
+		DeferCleanup(func() { os.Setenv("PATTERNIZER_RESOURCES_DIR", old) })
 
-	tmp := t.TempDir()
-	if err := os.Setenv("PATTERNIZER_RESOURCES_DIR", tmp); err != nil {
-		t.Fatalf("setenv failed: %v", err)
-	}
-	got, err := GetResourcesPath()
-	if err != nil || got != tmp {
-		t.Fatalf("GetResourcesPath with env set failed: got %q err %v", got, err)
-	}
+		tmp := GinkgoT().TempDir()
+		Expect(os.Setenv("PATTERNIZER_RESOURCES_DIR", tmp)).To(Succeed())
+		got, err := GetResourcesPath()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(got).To(Equal(tmp))
+	})
 
-	if err := os.Unsetenv("PATTERNIZER_RESOURCES_DIR"); err != nil {
-		t.Fatalf("unsetenv failed: %v", err)
-	}
-	if _, err := GetResourcesPath(); err == nil {
-		t.Fatalf("expected error when env is unset")
-	}
-}
+	It("should return an error when the environment variable is unset", func() {
+		old := os.Getenv("PATTERNIZER_RESOURCES_DIR")
+		DeferCleanup(func() { os.Setenv("PATTERNIZER_RESOURCES_DIR", old) })
 
-func TestRemovePathIfExists_FileDirSymlink(t *testing.T) {
-	base := t.TempDir()
+		Expect(os.Unsetenv("PATTERNIZER_RESOURCES_DIR")).To(Succeed())
+		_, err := GetResourcesPath()
+		Expect(err).To(HaveOccurred())
+	})
+})
 
-	// File removal
-	f := filepath.Join(base, "file.txt")
-	if err := os.WriteFile(f, []byte("x"), 0o644); err != nil {
-		t.Fatalf("write file failed: %v", err)
-	}
-	if err := RemovePathIfExists(f); err != nil {
-		t.Fatalf("RemovePathIfExists(file) failed: %v", err)
-	}
-	if _, err := os.Stat(f); !os.IsNotExist(err) {
-		t.Fatalf("file not removed")
-	}
+var _ = Describe("RemovePathIfExists", func() {
+	It("should remove a file", func() {
+		base := GinkgoT().TempDir()
+		f := filepath.Join(base, "file.txt")
+		Expect(os.WriteFile(f, []byte("x"), 0o644)).To(Succeed())
 
-	// Directory removal
-	d := filepath.Join(base, "dir")
-	if err := os.MkdirAll(filepath.Join(d, "nested"), 0o755); err != nil {
-		t.Fatalf("mkdir failed: %v", err)
-	}
-	if err := RemovePathIfExists(d); err != nil {
-		t.Fatalf("RemovePathIfExists(dir) failed: %v", err)
-	}
-	if _, err := os.Stat(d); !os.IsNotExist(err) {
-		t.Fatalf("dir not removed")
-	}
+		Expect(RemovePathIfExists(f)).To(Succeed())
+		_, err := os.Stat(f)
+		Expect(os.IsNotExist(err)).To(BeTrue())
+	})
 
-	// Symlink removal (link to a directory)
-	targetDir := t.TempDir()
-	link := filepath.Join(base, "link")
-	// Windows symlinks require admin/dev mode; skip on windows
-	if runtime.GOOS != "windows" {
-		if err := os.Symlink(targetDir, link); err != nil {
-			t.Fatalf("symlink failed: %v", err)
+	It("should remove a directory", func() {
+		base := GinkgoT().TempDir()
+		d := filepath.Join(base, "dir")
+		Expect(os.MkdirAll(filepath.Join(d, "nested"), 0o755)).To(Succeed())
+
+		Expect(RemovePathIfExists(d)).To(Succeed())
+		_, err := os.Stat(d)
+		Expect(os.IsNotExist(err)).To(BeTrue())
+	})
+
+	It("should remove a symlink without removing the target", func() {
+		if runtime.GOOS == "windows" {
+			Skip("symlink tests require admin/dev mode on Windows")
 		}
-		if err := RemovePathIfExists(link); err != nil {
-			t.Fatalf("RemovePathIfExists(symlink) failed: %v", err)
-		}
-		if _, err := os.Lstat(link); !os.IsNotExist(err) {
-			t.Fatalf("symlink not removed")
-		}
+
+		base := GinkgoT().TempDir()
+		targetDir := GinkgoT().TempDir()
+		link := filepath.Join(base, "link")
+		Expect(os.Symlink(targetDir, link)).To(Succeed())
+
+		Expect(RemovePathIfExists(link)).To(Succeed())
+		_, err := os.Lstat(link)
+		Expect(os.IsNotExist(err)).To(BeTrue())
+
 		// Ensure target still exists
-		if _, err := os.Stat(targetDir); err != nil {
-			t.Fatalf("target dir should still exist: %v", err)
-		}
-	}
+		_, err = os.Stat(targetDir)
+		Expect(err).NotTo(HaveOccurred())
+	})
 
-	// Non-existent path should be no-op
-	if err := RemovePathIfExists(filepath.Join(base, "does-not-exist")); err != nil {
-		t.Fatalf("RemovePathIfExists(nonexistent) failed: %v", err)
-	}
-}
+	It("should be a no-op for a non-existent path", func() {
+		base := GinkgoT().TempDir()
+		Expect(RemovePathIfExists(filepath.Join(base, "does-not-exist"))).To(Succeed())
+	})
+})
 
-func TestFileContainsIncludeMakefileCommon_Detection(t *testing.T) {
-	dir := t.TempDir()
-	p := filepath.Join(dir, "Makefile")
+var _ = Describe("FileContainsIncludeMakefileCommon", func() {
+	DescribeTable("should detect include Makefile-common correctly",
+		func(content string, expected bool) {
+			dir := GinkgoT().TempDir()
+			p := filepath.Join(dir, "Makefile")
+			Expect(os.WriteFile(p, []byte(content), 0o644)).To(Succeed())
 
-	cases := []struct {
-		content string
-		want    bool
-	}{
-		{content: "all:\n\t@echo hi\n", want: false},
-		{content: "include Makefile-common\nall:\n\t@echo hi\n", want: true},
-		{content: "  include   Makefile-common\nall:\n\t@echo hi\n", want: true},
-		{content: "# include Makefile-common\nall:\n\t@echo hi\n", want: false},
-		{content: "foo:\n\t@echo foo\n# comment\nbar:\n\t@echo bar\n", want: false},
-		{content: strings.Join([]string{"foo:", "\t@echo foo", "include Makefile-common", "bar:", "\t@echo bar", ""}, "\n"), want: true},
-	}
-
-	for i, tc := range cases {
-		if err := os.WriteFile(p, []byte(tc.content), 0o644); err != nil {
-			t.Fatalf("write case %d failed: %v", i, err)
-		}
-		got, err := FileContainsIncludeMakefileCommon(p)
-		if err != nil {
-			t.Fatalf("case %d: err: %v", i, err)
-		}
-		if got != tc.want {
-			t.Fatalf("case %d: got %v want %v", i, got, tc.want)
-		}
-	}
-}
-
-func TestPrependLineToFile_PrependsAndPreservesMode(t *testing.T) {
-	dir := t.TempDir()
-	p := filepath.Join(dir, "Makefile")
-	original := "all:\n\t@echo hi\n"
-	mode := os.FileMode(0o600)
-	writeFileWithMode(t, p, original, mode)
-
-	line := "include Makefile-common"
-	if err := PrependLineToFile(p, line); err != nil {
-		t.Fatalf("PrependLineToFile failed: %v", err)
-	}
-
-	data, err := os.ReadFile(p)
-	if err != nil {
-		t.Fatalf("read failed: %v", err)
-	}
-	expected := line + "\n" + original
-	if string(data) != expected {
-		t.Fatalf("unexpected content after prepend: %q", string(data))
-	}
-
-	info, err := os.Stat(p)
-	if err != nil {
-		t.Fatalf("stat failed: %v", err)
-	}
-	if info.Mode().Perm() != mode.Perm() {
-		t.Fatalf("mode not preserved: got %v want %v", info.Mode().Perm(), mode.Perm())
-	}
-}
-
-func TestWriteYAMLWithIndent_Uses2SpaceIndentation(t *testing.T) {
-	dir := t.TempDir()
-	p := filepath.Join(dir, "test.yaml")
-
-	// Create a nested structure to verify indentation
-	type NestedStruct struct {
-		Field1 string `yaml:"field1"`
-		Field2 int    `yaml:"field2"`
-	}
-	type TestStruct struct {
-		Name   string       `yaml:"name"`
-		Nested NestedStruct `yaml:"nested"`
-		Items  []string     `yaml:"items"`
-	}
-
-	data := TestStruct{
-		Name: "test",
-		Nested: NestedStruct{
-			Field1: "value1",
-			Field2: 42,
+			got, err := FileContainsIncludeMakefileCommon(p)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(got).To(Equal(expected))
 		},
-		Items: []string{"item1", "item2", "item3"},
-	}
+		Entry("no include directive", "all:\n\t@echo hi\n", false),
+		Entry("include at start of file", "include Makefile-common\nall:\n\t@echo hi\n", true),
+		Entry("include with leading whitespace", "  include   Makefile-common\nall:\n\t@echo hi\n", true),
+		Entry("commented out include", "# include Makefile-common\nall:\n\t@echo hi\n", false),
+		Entry("no include in multi-target file", "foo:\n\t@echo foo\n# comment\nbar:\n\t@echo bar\n", false),
+		Entry("include in the middle of the file",
+			strings.Join([]string{"foo:", "\t@echo foo", "include Makefile-common", "bar:", "\t@echo bar", ""}, "\n"), true),
+	)
+})
 
-	// Write the YAML with our function
-	if err := WriteYAMLWithIndent(data, p); err != nil {
-		t.Fatalf("WriteYAMLWithIndent failed: %v", err)
-	}
+var _ = Describe("PrependLineToFile", func() {
+	It("should prepend a line and preserve file mode", func() {
+		dir := GinkgoT().TempDir()
+		p := filepath.Join(dir, "Makefile")
+		original := "all:\n\t@echo hi\n"
+		mode := os.FileMode(0o600)
+		writeFileWithMode(p, original, mode)
 
-	// Read the file and verify indentation
-	content, err := os.ReadFile(p)
-	if err != nil {
-		t.Fatalf("read failed: %v", err)
-	}
+		line := "include Makefile-common"
+		Expect(PrependLineToFile(p, line)).To(Succeed())
 
-	// Verify 2-space indentation by checking the content
-	// The nested fields should be indented with 2 spaces, not 4
-	contentStr := string(content)
-	if !strings.Contains(contentStr, "  field1: value1") {
-		t.Fatalf("expected 2-space indentation for nested.field1, got:\n%s", contentStr)
-	}
-	if !strings.Contains(contentStr, "  field2: 42") {
-		t.Fatalf("expected 2-space indentation for nested.field2, got:\n%s", contentStr)
-	}
-	// Verify it's not 4-space indentation
-	if strings.Contains(contentStr, "    field1") || strings.Contains(contentStr, "    field2") {
-		t.Fatalf("unexpected 4-space indentation found:\n%s", contentStr)
-	}
+		data, err := os.ReadFile(p)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(string(data)).To(Equal(line + "\n" + original))
 
-	// Verify the file can be unmarshaled back correctly
-	var decoded TestStruct
-	if err := yaml.Unmarshal(content, &decoded); err != nil {
-		t.Fatalf("failed to unmarshal written YAML: %v", err)
-	}
-	if decoded.Name != data.Name {
-		t.Fatalf("name mismatch: got %q want %q", decoded.Name, data.Name)
-	}
-	if decoded.Nested.Field1 != data.Nested.Field1 {
-		t.Fatalf("nested.field1 mismatch: got %q want %q", decoded.Nested.Field1, data.Nested.Field1)
-	}
-	if decoded.Nested.Field2 != data.Nested.Field2 {
-		t.Fatalf("nested.field2 mismatch: got %d want %d", decoded.Nested.Field2, data.Nested.Field2)
-	}
+		info, err := os.Stat(p)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(info.Mode().Perm()).To(Equal(mode.Perm()))
+	})
+})
 
-	// Verify file permissions
-	info, err := os.Stat(p)
-	if err != nil {
-		t.Fatalf("stat failed: %v", err)
-	}
-	expectedMode := os.FileMode(0o644)
-	if info.Mode().Perm() != expectedMode.Perm() {
-		t.Fatalf("mode mismatch: got %v want %v", info.Mode().Perm(), expectedMode.Perm())
-	}
-}
+var _ = Describe("WriteYAMLWithIndent", func() {
+	It("should use 2-space indentation", func() {
+		dir := GinkgoT().TempDir()
+		p := filepath.Join(dir, "test.yaml")
+
+		type NestedStruct struct {
+			Field1 string `yaml:"field1"`
+			Field2 int    `yaml:"field2"`
+		}
+		type TestStruct struct {
+			Name   string       `yaml:"name"`
+			Nested NestedStruct `yaml:"nested"`
+			Items  []string     `yaml:"items"`
+		}
+
+		data := TestStruct{
+			Name: "test",
+			Nested: NestedStruct{
+				Field1: "value1",
+				Field2: 42,
+			},
+			Items: []string{"item1", "item2", "item3"},
+		}
+
+		Expect(WriteYAMLWithIndent(data, p)).To(Succeed())
+
+		content, err := os.ReadFile(p)
+		Expect(err).NotTo(HaveOccurred())
+		contentStr := string(content)
+
+		Expect(contentStr).To(ContainSubstring("  field1: value1"))
+		Expect(contentStr).To(ContainSubstring("  field2: 42"))
+		Expect(contentStr).NotTo(ContainSubstring("    field1"))
+		Expect(contentStr).NotTo(ContainSubstring("    field2"))
+
+		// Verify round-trip
+		var decoded TestStruct
+		Expect(yaml.Unmarshal(content, &decoded)).To(Succeed())
+		Expect(decoded.Name).To(Equal(data.Name))
+		Expect(decoded.Nested.Field1).To(Equal(data.Nested.Field1))
+		Expect(decoded.Nested.Field2).To(Equal(data.Nested.Field2))
+
+		// Verify file permissions
+		info, err := os.Stat(p)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(info.Mode().Perm()).To(Equal(os.FileMode(0o644).Perm()))
+	})
+})
