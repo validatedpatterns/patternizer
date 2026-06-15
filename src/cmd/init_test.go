@@ -17,6 +17,14 @@ main:
   clusterGroupName: test
 `
 
+const customGlobalValuesWithSingleArgoCDFalse = `
+global:
+  pattern: test-pattern
+  singleArgoCD: false
+main:
+  clusterGroupName: test
+`
+
 const customClusterGroupValues = `
 clusterGroup:
   name: test
@@ -65,7 +73,8 @@ var _ = Describe("patternizer init", func() {
 			globalValuesFile := filepath.Join(tempDir, "values-global.yaml")
 			expectedGlobalValues := types.ValuesGlobal{
 				Global: types.Global{
-					Pattern: filepath.Base(tempDir),
+					Pattern:      filepath.Base(tempDir),
+					SingleArgoCD: true,
 					SecretLoader: types.SecretLoader{
 						Disabled: true,
 					},
@@ -117,7 +126,8 @@ var _ = Describe("patternizer init", func() {
 			globalValuesFile := filepath.Join(tempDir, "values-global.yaml")
 			expectedGlobalValues := types.ValuesGlobal{
 				Global: types.Global{
-					Pattern: filepath.Base(tempDir),
+					Pattern:      filepath.Base(tempDir),
+					SingleArgoCD: true,
 					SecretLoader: types.SecretLoader{
 						Disabled: true,
 					},
@@ -180,7 +190,8 @@ var _ = Describe("patternizer init", func() {
 			globalValuesFile := filepath.Join(tempDir, "values-global.yaml")
 			expectedGlobalValues := types.ValuesGlobal{
 				Global: types.Global{
-					Pattern: "test-pattern",
+					Pattern:      "test-pattern",
+					SingleArgoCD: true,
 					SecretLoader: types.SecretLoader{
 						Disabled: true,
 					},
@@ -232,7 +243,8 @@ var _ = Describe("patternizer init", func() {
 			globalValuesFile := filepath.Join(tempDir, "values-global.yaml")
 			expectedGlobalValues := types.ValuesGlobal{
 				Global: types.Global{
-					Pattern: "test-pattern",
+					Pattern:      "test-pattern",
+					SingleArgoCD: true,
 					SecretLoader: types.SecretLoader{
 						Disabled: true,
 					},
@@ -271,6 +283,41 @@ var _ = Describe("patternizer init", func() {
 			verifyClusterGroupValues(clusterGroupValuesFile, &expectedClusterGroupValues)
 		})
 	})
+
+	Context("on a directory with singleArgoCD explicitly set to false", Ordered, func() {
+		var tempDir string
+
+		BeforeAll(func() {
+			tempDir = createTestDir()
+			Expect(os.WriteFile(filepath.Join(tempDir, "values-global.yaml"), []byte(customGlobalValuesWithSingleArgoCDFalse), 0o644)).To(Succeed())
+			_ = runCLI(tempDir, "init")
+		})
+
+		AfterAll(func() {
+			os.RemoveAll(tempDir)
+		})
+
+		It("should respect the explicit singleArgoCD override", func() {
+			globalValuesFile := filepath.Join(tempDir, "values-global.yaml")
+			expectedGlobalValues := types.ValuesGlobal{
+				Global: types.Global{
+					Pattern:      "test-pattern",
+					SingleArgoCD: false,
+					SecretLoader: types.SecretLoader{
+						Disabled: true,
+					},
+				},
+				Main: types.Main{
+					ClusterGroupName: "test",
+					MultiSourceConfig: types.MultiSourceConfig{
+						Enabled:                  true,
+						ClusterGroupChartVersion: "0.9.*",
+					},
+				},
+			}
+			verifyGlobalValues(globalValuesFile, &expectedGlobalValues)
+		})
+	})
 })
 
 var _ = Describe("patternizer init --with-secrets", func() {
@@ -298,7 +345,8 @@ var _ = Describe("patternizer init --with-secrets", func() {
 			globalValuesFile := filepath.Join(tempDir, "values-global.yaml")
 			expectedGlobalValues := types.ValuesGlobal{
 				Global: types.Global{
-					Pattern: filepath.Base(tempDir),
+					Pattern:      filepath.Base(tempDir),
+					SingleArgoCD: true,
 					SecretLoader: types.SecretLoader{
 						Disabled: false,
 					},
@@ -383,7 +431,8 @@ var _ = Describe("patternizer init --with-secrets", func() {
 			globalValuesFile := filepath.Join(tempDir, "values-global.yaml")
 			expectedGlobalValues := types.ValuesGlobal{
 				Global: types.Global{
-					Pattern: filepath.Base(tempDir),
+					Pattern:      filepath.Base(tempDir),
+					SingleArgoCD: true,
 					SecretLoader: types.SecretLoader{
 						Disabled: false,
 					},
@@ -478,7 +527,8 @@ var _ = Describe("patternizer init --with-secrets", func() {
 			globalValuesFile := filepath.Join(tempDir, "values-global.yaml")
 			expectedGlobalValues := types.ValuesGlobal{
 				Global: types.Global{
-					Pattern: "test-pattern",
+					Pattern:      "test-pattern",
+					SingleArgoCD: true,
 					SecretLoader: types.SecretLoader{
 						Disabled: false,
 					},
@@ -560,7 +610,8 @@ var _ = Describe("patternizer init --with-secrets", func() {
 			globalValuesFile := filepath.Join(tempDir, "values-global.yaml")
 			expectedGlobalValues := types.ValuesGlobal{
 				Global: types.Global{
-					Pattern: filepath.Base(tempDir),
+					Pattern:      filepath.Base(tempDir),
+					SingleArgoCD: true,
 					SecretLoader: types.SecretLoader{
 						Disabled: false,
 					},
@@ -656,7 +707,8 @@ var _ = Describe("patternizer init --with-secrets", func() {
 			globalValuesFile := filepath.Join(tempDir, "values-global.yaml")
 			expectedGlobalValues := types.ValuesGlobal{
 				Global: types.Global{
-					Pattern: "test-pattern",
+					Pattern:      "test-pattern",
+					SingleArgoCD: true,
 					SecretLoader: types.SecretLoader{
 						Disabled: false,
 					},

@@ -9,6 +9,7 @@ type SecretLoader struct {
 // Global represents the 'global' section of the YAML file.
 type Global struct {
 	Pattern      string                 `yaml:"pattern"`
+	SingleArgoCD bool                   `yaml:"singleArgoCD"`
 	SecretLoader SecretLoader           `yaml:"secretLoader"`
 	OtherFields  map[string]interface{} `yaml:",inline"`
 }
@@ -38,6 +39,7 @@ type ValuesGlobal struct {
 func NewDefaultValuesGlobal() *ValuesGlobal {
 	return &ValuesGlobal{
 		Global: Global{
+			SingleArgoCD: true,
 			SecretLoader: SecretLoader{
 				Disabled: true,
 			},
