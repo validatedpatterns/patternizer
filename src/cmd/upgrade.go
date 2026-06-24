@@ -82,6 +82,10 @@ func runUpgrade(replaceMakefile bool) error {
 		}
 	}
 
+	if err := fileutils.InstallSkills(repoRoot); err != nil {
+		return fmt.Errorf("error installing skills: %w", err)
+	}
+
 	fmt.Printf("Successfully upgraded pattern repository in %s\n", repoRoot)
 	return nil
 }

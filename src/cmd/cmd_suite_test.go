@@ -19,6 +19,7 @@ import (
 var (
 	binaryPath    string
 	resourcesPath string
+	skillsPath    string
 	projectRoot   string
 )
 
@@ -38,6 +39,10 @@ var _ = BeforeSuite(func() {
 	resourcesPath = filepath.Join(projectRoot, "resources")
 	Expect(resourcesPath).To(BeADirectory(), "Could not find resources directory")
 	os.Setenv("PATTERNIZER_RESOURCES_DIR", resourcesPath)
+
+	skillsPath = filepath.Join(projectRoot, "skills")
+	Expect(skillsPath).To(BeADirectory(), "Could not find skills directory")
+	os.Setenv("PATTERNIZER_SKILLS_DIR", skillsPath)
 
 	binaryPath, err = gexec.Build(filepath.Join(projectRoot, "src"))
 	Expect(err).NotTo(HaveOccurred())
@@ -130,12 +135,30 @@ func createTestDir() string {
 func runCLI(dir string, args ...string) *gexec.Session {
 	cmd := exec.Command(binaryPath, args...)
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), "PATTERNIZER_RESOURCES_DIR="+resourcesPath)
+	cmd.Env = append(os.Environ(),
+		"PATTERNIZER_RESOURCES_DIR="+resourcesPath,
+		"PATTERNIZER_SKILLS_DIR="+skillsPath,
+	)
 
 	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
 	Eventually(session).Should(gexec.Exit(0))
 	return session
+}
+
+func verifySkillsInstalled(dir string) {
+	for _, target := range []string{".claude", ".cursor"} {
+		skillDir := filepath.Join(dir, target, "skills", "pattern-author")
+		Expect(skillDir).To(BeADirectory(), fmt.Sprintf("Expected %s to exist", skillDir))
+
+		skillMD := filepath.Join(skillDir, "SKILL.md")
+		expectedMD := filepath.Join(skillsPath, "pattern-author", "SKILL.md")
+		verifyFilesMatch(skillMD, expectedMD)
+
+		refMD := filepath.Join(skillDir, "reference.md")
+		expectedRef := filepath.Join(skillsPath, "pattern-author", "reference.md")
+		verifyFilesMatch(refMD, expectedRef)
+	}
 }
 
 func addDummyChart(dir, name string) {
