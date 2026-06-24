@@ -61,6 +61,10 @@ var _ = Describe("patternizer upgrade", func() {
 			verifyAnsibleCfgCopied(tempDir)
 		})
 
+		It("should install skills for Claude and Cursor", func() {
+			verifySkillsInstalled(tempDir)
+		})
+
 		It("should inject the include for Makefile-common into the existing Makefile", func() {
 			f, err := os.ReadFile(filepath.Join(tempDir, "Makefile"))
 			Expect(err).NotTo(HaveOccurred())

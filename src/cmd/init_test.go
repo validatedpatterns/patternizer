@@ -69,6 +69,10 @@ var _ = Describe("patternizer init", func() {
 			verifyScaffoldFilesCopied(tempDir)
 		})
 
+		It("should install skills for Claude and Cursor", func() {
+			verifySkillsInstalled(tempDir)
+		})
+
 		It("should create an appropriate global values file", func() {
 			globalValuesFile := filepath.Join(tempDir, "values-global.yaml")
 			expectedGlobalValues := types.ValuesGlobal{

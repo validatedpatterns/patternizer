@@ -72,8 +72,55 @@ func GetResourcesPath() (path string, err error) {
 		return path, nil
 	}
 
-	// Error out if the resources directory is not found
 	return "", fmt.Errorf("PATTERNIZER_RESOURCES_DIR environment variable is not set")
+}
+
+func GetSkillsPath() (string, error) {
+	path := os.Getenv("PATTERNIZER_SKILLS_DIR")
+	if path != "" {
+		return path, nil
+	}
+
+	return "", fmt.Errorf("PATTERNIZER_SKILLS_DIR environment variable is not set")
+}
+
+// CopyDir recursively copies the contents of src into dst.
+// It creates dst and any necessary subdirectories.
+// Existing files in dst are overwritten, but files not present in src are left untouched.
+func CopyDir(src, dst string) error {
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+	if !srcInfo.IsDir() {
+		return fmt.Errorf("%s is not a directory", src)
+	}
+
+	if err := os.MkdirAll(dst, 0o755); err != nil {
+		return err
+	}
+
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		srcPath := filepath.Join(src, entry.Name())
+		dstPath := filepath.Join(dst, entry.Name())
+
+		if entry.IsDir() {
+			if err := CopyDir(srcPath, dstPath); err != nil {
+				return err
+			}
+		} else {
+			if err := CopyFile(srcPath, dstPath); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 // RemovePathIfExists removes a file, directory, or symlink at the given path if it exists.

@@ -85,6 +85,79 @@ var _ = Describe("GetResourcesPath", func() {
 	})
 })
 
+var _ = Describe("GetSkillsPath", func() {
+	It("should return the path when the environment variable is set", func() {
+		old := os.Getenv("PATTERNIZER_SKILLS_DIR")
+		DeferCleanup(func() { os.Setenv("PATTERNIZER_SKILLS_DIR", old) })
+
+		tmp := GinkgoT().TempDir()
+		Expect(os.Setenv("PATTERNIZER_SKILLS_DIR", tmp)).To(Succeed())
+		got, err := GetSkillsPath()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(got).To(Equal(tmp))
+	})
+
+	It("should return an error when the environment variable is unset", func() {
+		old := os.Getenv("PATTERNIZER_SKILLS_DIR")
+		DeferCleanup(func() { os.Setenv("PATTERNIZER_SKILLS_DIR", old) })
+
+		Expect(os.Unsetenv("PATTERNIZER_SKILLS_DIR")).To(Succeed())
+		_, err := GetSkillsPath()
+		Expect(err).To(HaveOccurred())
+	})
+})
+
+var _ = Describe("CopyDir", func() {
+	It("should recursively copy a directory and its contents", func() {
+		src := GinkgoT().TempDir()
+		dst := filepath.Join(GinkgoT().TempDir(), "dest")
+
+		Expect(os.MkdirAll(filepath.Join(src, "sub"), 0o755)).To(Succeed())
+		Expect(os.WriteFile(filepath.Join(src, "file1.txt"), []byte("hello"), 0o644)).To(Succeed())
+		Expect(os.WriteFile(filepath.Join(src, "sub", "file2.txt"), []byte("world"), 0o644)).To(Succeed())
+
+		Expect(CopyDir(src, dst)).To(Succeed())
+
+		got1, err := os.ReadFile(filepath.Join(dst, "file1.txt"))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(string(got1)).To(Equal("hello"))
+
+		got2, err := os.ReadFile(filepath.Join(dst, "sub", "file2.txt"))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(string(got2)).To(Equal("world"))
+	})
+
+	It("should overwrite existing files without deleting unrelated files", func() {
+		src := GinkgoT().TempDir()
+		dst := GinkgoT().TempDir()
+
+		Expect(os.WriteFile(filepath.Join(src, "file.txt"), []byte("new"), 0o644)).To(Succeed())
+
+		Expect(os.WriteFile(filepath.Join(dst, "file.txt"), []byte("old"), 0o644)).To(Succeed())
+		Expect(os.WriteFile(filepath.Join(dst, "unrelated.txt"), []byte("keep me"), 0o644)).To(Succeed())
+
+		Expect(CopyDir(src, dst)).To(Succeed())
+
+		got, err := os.ReadFile(filepath.Join(dst, "file.txt"))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(string(got)).To(Equal("new"))
+
+		kept, err := os.ReadFile(filepath.Join(dst, "unrelated.txt"))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(string(kept)).To(Equal("keep me"))
+	})
+
+	It("should return an error when source is not a directory", func() {
+		dir := GinkgoT().TempDir()
+		file := filepath.Join(dir, "file.txt")
+		Expect(os.WriteFile(file, []byte("x"), 0o644)).To(Succeed())
+
+		err := CopyDir(file, filepath.Join(dir, "dst"))
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("is not a directory"))
+	})
+})
+
 var _ = Describe("RemovePathIfExists", func() {
 	It("should remove a file", func() {
 		base := GinkgoT().TempDir()

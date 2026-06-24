@@ -77,6 +77,10 @@ func runInit(withSecrets bool) error {
 		}
 	}
 
+	if err := fileutils.InstallSkills(repoRoot); err != nil {
+		return fmt.Errorf("error installing skills: %w", err)
+	}
+
 	fmt.Printf("Successfully initialized pattern '%s' in %s\n", actualPatternName, repoRoot)
 	if withSecrets {
 		fmt.Println("Secrets configuration has been enabled.")
