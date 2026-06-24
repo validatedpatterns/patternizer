@@ -12,9 +12,9 @@ GO_TEST := $(GO_CMD) test
 GO_CLEAN := $(GO_CMD) clean
 GO_VET := $(GO_CMD) vet
 GO_FMT := gofmt
-GO_VERSION := 1.25.7
-GOLANGCI_LINT_VERSION := v2.10.1
-GINKGO_VERSION := v2.28.1
+GO_VERSION := 1.26.3
+GOLANGCI_LINT_VERSION := v2.12.2
+GINKGO_VERSION := v2.32.0
 SRC_DIR := src
 
 # Default target
