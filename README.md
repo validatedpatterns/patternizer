@@ -18,6 +18,7 @@
       - [**Upgrade an existing pattern repository:**](#upgrade-an-existing-pattern-repository)
     - [Understanding Secrets Management](#understanding-secrets-management)
     - [Generated Files](#generated-files)
+    - [AI Coding Skills](#ai-coding-skills)
   - [Development \& Contributing](#development--contributing)
     - [Prerequisites](#prerequisites)
     - [Local Development Workflow](#local-development-workflow)
@@ -136,11 +137,21 @@ Running `patternizer init` creates the following:
 - `Makefile`: A simple Makefile that includes `Makefile-common`.
 - `Makefile-common`: The core Makefile with all pattern-related targets.
 - `ansible.cfg`: Configuration for the ansible installation used when `./pattern.sh` is called
+- `.claude/skills/pattern-author/`: AI coding skill for Claude Code (see [AI Coding Skills](#ai-coding-skills))
+- `.cursor/skills/pattern-author/`: AI coding skill for Cursor (see [AI Coding Skills](#ai-coding-skills))
 
 Using the `--with-secrets` flag additionally creates:
 
 - `values-secret.yaml.template`: A template for defining your secrets.
 - It also updates `values-global.yaml` to set `global.secretLoader.disabled: false` and adds Vault and External Secrets Operator to the cluster group values.
+
+### AI Coding Skills
+
+Both `init` and `upgrade` install the **pattern-author** skill into your pattern repository. This skill teaches AI coding assistants how to work with Validated Patterns — including the values file structure, operator subscriptions, secrets framework, and hub/spoke configuration.
+
+The skill is installed for both [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and [Cursor](https://cursor.com/) using the [Agent Skills](https://cursor.com/docs/skills) open standard. The same skill files work in both tools. Any existing skills or configuration you have in your `.claude/` or `.cursor/` directories are left untouched.
+
+To use the skill, open your pattern repository in Claude Code or Cursor and ask the assistant to help with pattern authoring tasks — for example, adding an operator, configuring secrets, or setting up a spoke cluster.
 
 ## Development & Contributing
 
