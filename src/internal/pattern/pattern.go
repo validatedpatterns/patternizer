@@ -88,21 +88,8 @@ func mergeClusterGroupValues(defaults, existing *types.ValuesClusterGroup) {
 		defaults.ClusterGroup.Applications[key] = app
 	}
 
-	existingNamespaceMap := make(map[string]bool)
-	for _, ns := range existing.ClusterGroup.Namespaces {
-		found := false
-		for _, defaultNs := range defaults.ClusterGroup.Namespaces {
-			if ns.Equal(defaultNs) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			defaults.ClusterGroup.Namespaces = append(defaults.ClusterGroup.Namespaces, ns)
-		}
-		if nsStr, ok := ns.GetString(); ok {
-			existingNamespaceMap[nsStr] = true
-		}
+	for nsName, nsConfig := range existing.ClusterGroup.Namespaces {
+		defaults.ClusterGroup.Namespaces[nsName] = nsConfig
 	}
 
 	existingProjectMap := make(map[string]bool)
