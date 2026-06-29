@@ -237,6 +237,12 @@ var _ = Describe("ProcessClusterGroupValues", func() {
 				Expect(getNestedValue(processedValues, tt.path)).To(Equal(tt.expected),
 					"Field %v should be %v", tt.path, tt.expected)
 			}
+
+			clusterGroup := processedValues["clusterGroup"].(map[string]interface{})
+			namespaces := clusterGroup["namespaces"].(map[string]interface{})
+			Expect(namespaces).To(HaveKey("custom-ns1"))
+			Expect(namespaces).To(HaveKey("custom-ns2"))
+			Expect(namespaces).To(HaveKey("test-pattern"))
 		})
 
 		It("should preserve custom application fields", func() {

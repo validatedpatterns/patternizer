@@ -95,7 +95,7 @@ var _ = Describe("patternizer init", func() {
 			expectedClusterGroupValues := types.ValuesClusterGroup{
 				ClusterGroup: types.ClusterGroup{
 					Name:          "prod",
-					Namespaces:    []types.NamespaceEntry{types.NewNamespaceEntry(filepath.Base(tempDir))},
+					Namespaces:    map[string]interface{}{filepath.Base(tempDir): nil},
 					Subscriptions: map[string]types.Subscription{},
 					Applications:  map[string]types.Application{},
 				},
@@ -145,7 +145,7 @@ var _ = Describe("patternizer init", func() {
 			expectedClusterGroupValues := types.ValuesClusterGroup{
 				ClusterGroup: types.ClusterGroup{
 					Name:          "prod",
-					Namespaces:    []types.NamespaceEntry{types.NewNamespaceEntry(expectedNamespace)},
+					Namespaces:    map[string]interface{}{expectedNamespace: nil},
 					Subscriptions: map[string]types.Subscription{},
 					Applications: map[string]types.Application{
 						"test-app1": {
@@ -204,7 +204,7 @@ var _ = Describe("patternizer init", func() {
 			expectedClusterGroupValues := types.ValuesClusterGroup{
 				ClusterGroup: types.ClusterGroup{
 					Name:          "test",
-					Namespaces:    []types.NamespaceEntry{types.NewNamespaceEntry("test-pattern")},
+					Namespaces:    map[string]interface{}{"test-pattern": nil},
 					Subscriptions: map[string]types.Subscription{},
 					Applications:  map[string]types.Application{},
 				},
@@ -253,7 +253,7 @@ var _ = Describe("patternizer init", func() {
 			expectedClusterGroupValues := types.ValuesClusterGroup{
 				ClusterGroup: types.ClusterGroup{
 					Name:          "test",
-					Namespaces:    []types.NamespaceEntry{types.NewNamespaceEntry("test-pattern")},
+					Namespaces:    map[string]interface{}{"test-pattern": nil},
 					Subscriptions: map[string]types.Subscription{},
 					Applications: map[string]types.Application{
 						"custom-user-app": {
@@ -363,16 +363,14 @@ var _ = Describe("patternizer init --with-secrets", func() {
 			expectedClusterGroupValues := types.ValuesClusterGroup{
 				ClusterGroup: types.ClusterGroup{
 					Name: "prod",
-					Namespaces: []types.NamespaceEntry{
-						types.NewNamespaceEntry(filepath.Base(tempDir)),
-						types.NewNamespaceEntry("vault"),
-						types.NewMapNamespaceEntry(map[string]interface{}{
-							"external-secrets-operator": map[string]interface{}{
-								"operatorGroup":    true,
-								"targetNamespaces": []interface{}{},
-							},
-						}),
-						types.NewNamespaceEntry("external-secrets"),
+					Namespaces: map[string]interface{}{
+						filepath.Base(tempDir): nil,
+						"vault":                nil,
+						"external-secrets-operator": map[string]interface{}{
+							"operatorGroup":    true,
+							"targetNamespaces": []interface{}{},
+						},
+						"external-secrets": nil,
 					},
 					Subscriptions: map[string]types.Subscription{
 						"eso": {
@@ -446,16 +444,14 @@ var _ = Describe("patternizer init --with-secrets", func() {
 			expectedClusterGroupValues := types.ValuesClusterGroup{
 				ClusterGroup: types.ClusterGroup{
 					Name: "prod",
-					Namespaces: []types.NamespaceEntry{
-						types.NewNamespaceEntry(expectedNamespace),
-						types.NewNamespaceEntry("vault"),
-						types.NewMapNamespaceEntry(map[string]interface{}{
-							"external-secrets-operator": map[string]interface{}{
-								"operatorGroup":    true,
-								"targetNamespaces": []interface{}{},
-							},
-						}),
-						types.NewNamespaceEntry("external-secrets"),
+					Namespaces: map[string]interface{}{
+						expectedNamespace: nil,
+						"vault":           nil,
+						"external-secrets-operator": map[string]interface{}{
+							"operatorGroup":    true,
+							"targetNamespaces": []interface{}{},
+						},
+						"external-secrets": nil,
 					},
 					Subscriptions: map[string]types.Subscription{
 						"eso": {
@@ -537,16 +533,14 @@ var _ = Describe("patternizer init --with-secrets", func() {
 			expectedClusterGroupValues := types.ValuesClusterGroup{
 				ClusterGroup: types.ClusterGroup{
 					Name: "test",
-					Namespaces: []types.NamespaceEntry{
-						types.NewNamespaceEntry("test-pattern"),
-						types.NewNamespaceEntry("vault"),
-						types.NewMapNamespaceEntry(map[string]interface{}{
-							"external-secrets-operator": map[string]interface{}{
-								"operatorGroup":    true,
-								"targetNamespaces": []interface{}{},
-							},
-						}),
-						types.NewNamespaceEntry("external-secrets"),
+					Namespaces: map[string]interface{}{
+						"test-pattern": nil,
+						"vault":        nil,
+						"external-secrets-operator": map[string]interface{}{
+							"operatorGroup":    true,
+							"targetNamespaces": []interface{}{},
+						},
+						"external-secrets": nil,
 					},
 					Subscriptions: map[string]types.Subscription{
 						"eso": {
@@ -617,16 +611,14 @@ var _ = Describe("patternizer init --with-secrets", func() {
 			expectedClusterGroupValues := types.ValuesClusterGroup{
 				ClusterGroup: types.ClusterGroup{
 					Name: "prod",
-					Namespaces: []types.NamespaceEntry{
-						types.NewNamespaceEntry(expectedNamespace),
-						types.NewNamespaceEntry("vault"),
-						types.NewMapNamespaceEntry(map[string]interface{}{
-							"external-secrets-operator": map[string]interface{}{
-								"operatorGroup":    true,
-								"targetNamespaces": []interface{}{},
-							},
-						}),
-						types.NewNamespaceEntry("external-secrets"),
+					Namespaces: map[string]interface{}{
+						expectedNamespace: nil,
+						"vault":           nil,
+						"external-secrets-operator": map[string]interface{}{
+							"operatorGroup":    true,
+							"targetNamespaces": []interface{}{},
+						},
+						"external-secrets": nil,
 					},
 					Subscriptions: map[string]types.Subscription{
 						"eso": {
@@ -709,16 +701,14 @@ var _ = Describe("patternizer init --with-secrets", func() {
 			expectedClusterGroupValues := types.ValuesClusterGroup{
 				ClusterGroup: types.ClusterGroup{
 					Name: "test",
-					Namespaces: []types.NamespaceEntry{
-						types.NewNamespaceEntry("test-pattern"),
-						types.NewNamespaceEntry("vault"),
-						types.NewMapNamespaceEntry(map[string]interface{}{
-							"external-secrets-operator": map[string]interface{}{
-								"operatorGroup":    true,
-								"targetNamespaces": []interface{}{},
-							},
-						}),
-						types.NewNamespaceEntry("external-secrets"),
+					Namespaces: map[string]interface{}{
+						"test-pattern": nil,
+						"vault":        nil,
+						"external-secrets-operator": map[string]interface{}{
+							"operatorGroup":    true,
+							"targetNamespaces": []interface{}{},
+						},
+						"external-secrets": nil,
 					},
 					Subscriptions: map[string]types.Subscription{
 						"eso": {
@@ -769,6 +759,98 @@ var _ = Describe("patternizer init --with-secrets", func() {
 			actual, err := os.ReadFile(filepath.Join(tempDir, "values-secret.yaml.template"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(string(actual)).To(Equal(customSecretTemplate))
+		})
+	})
+})
+
+var _ = Describe("patternizer init namespace migration", func() {
+	Context("on a directory with list-style namespaces", Ordered, func() {
+		var tempDir string
+
+		BeforeAll(func() {
+			tempDir = createTestDir()
+			listStyleValues := `
+clusterGroup:
+  name: prod
+  namespaces:
+    - custom-ns
+    - vault
+    - external-secrets-operator:
+        operatorGroup: true
+        targetNamespaces: []
+    - external-secrets
+  subscriptions: {}
+  applications: {}
+`
+			Expect(os.WriteFile(filepath.Join(tempDir, "values-global.yaml"), []byte("global:\n  pattern: custom-ns\nmain:\n  clusterGroupName: prod\n"), 0o644)).To(Succeed())
+			Expect(os.WriteFile(filepath.Join(tempDir, "values-prod.yaml"), []byte(listStyleValues), 0o644)).To(Succeed())
+			_ = runCLI(tempDir, "init")
+		})
+
+		It("should migrate list-style namespaces to map-style", func() {
+			clusterGroupValuesFile := filepath.Join(tempDir, "values-prod.yaml")
+			expectedClusterGroupValues := types.ValuesClusterGroup{
+				ClusterGroup: types.ClusterGroup{
+					Name: "prod",
+					Namespaces: map[string]interface{}{
+						"custom-ns": nil,
+						"vault":     nil,
+						"external-secrets-operator": map[string]interface{}{
+							"operatorGroup":    true,
+							"targetNamespaces": []interface{}{},
+						},
+						"external-secrets": nil,
+					},
+					Subscriptions: map[string]types.Subscription{},
+					Applications:  map[string]types.Application{},
+				},
+			}
+			verifyClusterGroupValues(clusterGroupValuesFile, &expectedClusterGroupValues)
+		})
+	})
+
+	Context("on a directory with map-style namespaces", Ordered, func() {
+		var tempDir string
+
+		BeforeAll(func() {
+			tempDir = createTestDir()
+			mapStyleValues := `
+clusterGroup:
+  name: prod
+  namespaces:
+    custom-ns:
+    vault:
+    external-secrets-operator:
+      operatorGroup: true
+      targetNamespaces: []
+    external-secrets:
+  subscriptions: {}
+  applications: {}
+`
+			Expect(os.WriteFile(filepath.Join(tempDir, "values-global.yaml"), []byte("global:\n  pattern: custom-ns\nmain:\n  clusterGroupName: prod\n"), 0o644)).To(Succeed())
+			Expect(os.WriteFile(filepath.Join(tempDir, "values-prod.yaml"), []byte(mapStyleValues), 0o644)).To(Succeed())
+			_ = runCLI(tempDir, "init")
+		})
+
+		It("should preserve map-style namespaces", func() {
+			clusterGroupValuesFile := filepath.Join(tempDir, "values-prod.yaml")
+			expectedClusterGroupValues := types.ValuesClusterGroup{
+				ClusterGroup: types.ClusterGroup{
+					Name: "prod",
+					Namespaces: map[string]interface{}{
+						"custom-ns": nil,
+						"vault":     nil,
+						"external-secrets-operator": map[string]interface{}{
+							"operatorGroup":    true,
+							"targetNamespaces": []interface{}{},
+						},
+						"external-secrets": nil,
+					},
+					Subscriptions: map[string]types.Subscription{},
+					Applications:  map[string]types.Application{},
+				},
+			}
+			verifyClusterGroupValues(clusterGroupValuesFile, &expectedClusterGroupValues)
 		})
 	})
 })

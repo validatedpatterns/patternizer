@@ -3,62 +3,9 @@ package types
 import (
 	"fmt"
 	"path/filepath"
-	"reflect"
 
 	"gopkg.in/yaml.v3"
 )
-
-// NamespaceEntry represents a namespace that can be either a string or a map with additional configuration
-type NamespaceEntry struct {
-	value interface{}
-}
-
-// MarshalYAML implements the yaml.Marshaler interface for NamespaceEntry
-func (ne NamespaceEntry) MarshalYAML() (interface{}, error) {
-	return ne.value, nil
-}
-
-// UnmarshalYAML implements the yaml.Unmarshaler interface for NamespaceEntry
-func (ne *NamespaceEntry) UnmarshalYAML(value *yaml.Node) error {
-	ne.value = nil
-
-	var str string
-	if err := value.Decode(&str); err == nil {
-		ne.value = str
-		return nil
-	}
-
-	var m map[string]interface{}
-	if err := value.Decode(&m); err == nil {
-		ne.value = m
-		return nil
-	}
-
-	return fmt.Errorf("namespaces entry at line %d, column %d must be either a string or a map", value.Line, value.Column)
-}
-
-// GetString returns the string value if this NamespaceEntry is a string, and a boolean indicating success
-func (ne NamespaceEntry) GetString() (string, bool) {
-	if str, ok := ne.value.(string); ok {
-		return str, true
-	}
-	return "", false
-}
-
-// Equal compares two NamespaceEntry values for equality
-func (ne NamespaceEntry) Equal(other NamespaceEntry) bool {
-	return reflect.DeepEqual(ne.value, other.value)
-}
-
-// NewNamespaceEntry creates a new NamespaceEntry from a string
-func NewNamespaceEntry(namespace string) NamespaceEntry {
-	return NamespaceEntry{value: namespace}
-}
-
-// NewMapNamespaceEntry creates a new NamespaceEntry from a map
-func NewMapNamespaceEntry(m map[string]interface{}) NamespaceEntry {
-	return NamespaceEntry{value: m}
-}
 
 // Application defines the structure for an ArgoCD application entry.
 type Application struct {
@@ -83,11 +30,84 @@ type Subscription struct {
 // ClusterGroup holds the detailed configuration for the cluster group.
 type ClusterGroup struct {
 	Name          string                  `yaml:"name"`
-	Namespaces    []NamespaceEntry        `yaml:"namespaces"`
+	Namespaces    map[string]interface{}  `yaml:"namespaces"`
 	Projects      []string                `yaml:"projects,omitempty"`
 	Subscriptions map[string]Subscription `yaml:"subscriptions"`
 	Applications  map[string]Application  `yaml:"applications"`
 	OtherFields   map[string]interface{}  `yaml:",inline"`
+}
+
+// MarshalYAML implements the yaml.Marshaler interface for ClusterGroup.
+// It produces compact null representations (key: instead of key: null) for simple namespaces.
+func (cg ClusterGroup) MarshalYAML() (interface{}, error) {
+	type clusterGroupAlias ClusterGroup
+	var doc yaml.Node
+	if err := doc.Encode(clusterGroupAlias(cg)); err != nil {
+		return nil, err
+	}
+
+	node := &doc
+	if doc.Kind == yaml.DocumentNode && len(doc.Content) > 0 {
+		node = doc.Content[0]
+	}
+
+	if node.Kind == yaml.MappingNode {
+		for i := 0; i < len(node.Content)-1; i += 2 {
+			if node.Content[i].Value == "namespaces" && node.Content[i+1].Kind == yaml.MappingNode {
+				for j := 1; j < len(node.Content[i+1].Content); j += 2 {
+					v := node.Content[i+1].Content[j]
+					if v.Kind == yaml.ScalarNode && v.Tag == "!!null" {
+						v.Value = ""
+					}
+				}
+				break
+			}
+		}
+	}
+
+	return node, nil
+}
+
+// UnmarshalYAML implements the yaml.Unmarshaler interface for ClusterGroup.
+// It handles backward compatibility by converting list-style namespaces to map-style.
+func (cg *ClusterGroup) UnmarshalYAML(value *yaml.Node) error {
+	if value.Kind != yaml.MappingNode {
+		return fmt.Errorf("expected mapping node for ClusterGroup, got %d", value.Kind)
+	}
+
+	for i := 0; i < len(value.Content)-1; i += 2 {
+		keyNode := value.Content[i]
+		valNode := value.Content[i+1]
+
+		if keyNode.Value == "namespaces" && valNode.Kind == yaml.SequenceNode {
+			newContent := make([]*yaml.Node, 0, len(valNode.Content)*2)
+			for _, item := range valNode.Content {
+				switch item.Kind {
+				case yaml.ScalarNode:
+					newContent = append(newContent,
+						&yaml.Node{Kind: yaml.ScalarNode, Value: item.Value, Tag: "!!str"},
+						&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!null"},
+					)
+				case yaml.MappingNode:
+					if len(item.Content) >= 2 {
+						newContent = append(newContent, item.Content[0], item.Content[1])
+					}
+				}
+			}
+			valNode.Kind = yaml.MappingNode
+			valNode.Content = newContent
+			valNode.Tag = "!!map"
+			break
+		}
+	}
+
+	type clusterGroupAlias ClusterGroup
+	var alias clusterGroupAlias
+	if err := value.Decode(&alias); err != nil {
+		return err
+	}
+	*cg = ClusterGroup(alias)
+	return nil
 }
 
 // ValuesClusterGroup is the top-level struct for the cluster group values file.
@@ -99,23 +119,20 @@ type ValuesClusterGroup struct {
 // NewDefaultValuesClusterGroup creates a default configuration for a cluster group.
 // It conditionally includes secrets-related resources based on the useSecrets flag.
 func NewDefaultValuesClusterGroup(patternName, clusterGroupName string, chartPaths []string, useSecrets bool) *ValuesClusterGroup {
-	namespaces := []NamespaceEntry{NewNamespaceEntry(patternName)}
+	namespaces := map[string]interface{}{
+		patternName: nil,
+	}
 	applications := make(map[string]Application)
 	subscriptions := make(map[string]Subscription)
 
 	if useSecrets {
-		namespaces = append(
-			namespaces,
-			NewNamespaceEntry("vault"),
-			NamespaceEntry{map[string]interface{}{
-				"external-secrets-operator": map[string]interface{}{
-					"operatorGroup":    true,
-					"targetNamespaces": []string{},
-				},
-			},
-			},
-			NewNamespaceEntry("external-secrets"),
-		)
+		namespaces["vault"] = nil
+		namespaces["external-secrets-operator"] = map[string]interface{}{
+			"operatorGroup":    true,
+			"targetNamespaces": []string{},
+		}
+		namespaces["external-secrets"] = nil
+
 		subscriptions["eso"] = Subscription{
 			Name:      "openshift-external-secrets-operator",
 			Namespace: "external-secrets-operator",
