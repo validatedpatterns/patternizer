@@ -16,7 +16,7 @@ import (
 func CopyFile(src, dst string) error {
 	sourceFileStat, err := os.Stat(src)
 	if err != nil {
-		return err
+		return fmt.Errorf("stat source file %s: %w", src, err)
 	}
 
 	if !sourceFileStat.Mode().IsRegular() {
@@ -25,25 +25,24 @@ func CopyFile(src, dst string) error {
 
 	sourceFile, err := os.Open(src)
 	if err != nil {
-		return err
+		return fmt.Errorf("open source file %s: %w", src, err)
 	}
 	defer sourceFile.Close()
 
 	destinationFile, err := os.Create(dst)
 	if err != nil {
-		return err
+		return fmt.Errorf("create destination file %s: %w", dst, err)
 	}
 	defer destinationFile.Close()
 
 	_, err = io.Copy(destinationFile, sourceFile)
 	if err != nil {
-		return err
+		return fmt.Errorf("copy to %s: %w", dst, err)
 	}
 
-	// Preserve the file permissions from the source file
 	err = os.Chmod(dst, sourceFileStat.Mode())
 	if err != nil {
-		return err
+		return fmt.Errorf("chmod %s: %w", dst, err)
 	}
 
 	return nil
@@ -69,7 +68,7 @@ func WriteEmbeddedFile(fsys fs.FS, srcPath, dstPath string, mode os.FileMode) er
 		return fmt.Errorf("reading embedded file %s: %w", srcPath, err)
 	}
 	if err := os.WriteFile(dstPath, data, mode); err != nil {
-		return err
+		return fmt.Errorf("write file %s: %w", dstPath, err)
 	}
 	return os.Chmod(dstPath, mode)
 }
@@ -78,11 +77,11 @@ func WriteEmbeddedFile(fsys fs.FS, srcPath, dstPath string, mode os.FileMode) er
 func WriteEmbeddedDir(fsys fs.FS, srcDir, dstDir string) error {
 	return fs.WalkDir(fsys, srcDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			return err
+			return fmt.Errorf("walk embedded dir: %w", err)
 		}
 		relPath, err := filepath.Rel(srcDir, path)
 		if err != nil {
-			return err
+			return fmt.Errorf("compute relative path for %s: %w", path, err)
 		}
 		target := filepath.Join(dstDir, relPath)
 
@@ -99,19 +98,19 @@ func WriteEmbeddedDir(fsys fs.FS, srcDir, dstDir string) error {
 func CopyDir(src, dst string) error {
 	srcInfo, err := os.Stat(src)
 	if err != nil {
-		return err
+		return fmt.Errorf("stat source dir %s: %w", src, err)
 	}
 	if !srcInfo.IsDir() {
 		return fmt.Errorf("%s is not a directory", src)
 	}
 
 	if err := os.MkdirAll(dst, 0o755); err != nil {
-		return err
+		return fmt.Errorf("create destination dir %s: %w", dst, err)
 	}
 
 	entries, err := os.ReadDir(src)
 	if err != nil {
-		return err
+		return fmt.Errorf("read source dir %s: %w", src, err)
 	}
 
 	for _, entry := range entries {
@@ -120,11 +119,11 @@ func CopyDir(src, dst string) error {
 
 		if entry.IsDir() {
 			if err := CopyDir(srcPath, dstPath); err != nil {
-				return err
+				return fmt.Errorf("copy subdir %s: %w", entry.Name(), err)
 			}
 		} else {
 			if err := CopyFile(srcPath, dstPath); err != nil {
-				return err
+				return fmt.Errorf("copy file %s: %w", entry.Name(), err)
 			}
 		}
 	}
@@ -143,7 +142,7 @@ func RemovePathIfExists(targetPath string) error {
 		if os.IsNotExist(err) {
 			return nil
 		}
-		return err
+		return fmt.Errorf("lstat %s: %w", targetPath, err)
 	}
 
 	if info.IsDir() {
@@ -157,7 +156,7 @@ func RemovePathIfExists(targetPath string) error {
 func FileContainsIncludeMakefileCommon(makefilePath string) (bool, error) {
 	data, err := os.ReadFile(makefilePath)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("read %s: %w", makefilePath, err)
 	}
 	contents := string(data)
 	// We keep this simple to avoid regex: look for lines with 'include' and 'Makefile-common'
@@ -177,7 +176,7 @@ func FileContainsIncludeMakefileCommon(makefilePath string) (bool, error) {
 func PrependLineToFile(filePath, line string) error {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("read %s: %w", filePath, err)
 	}
 
 	mode := os.FileMode(0o644)
@@ -208,7 +207,6 @@ func WriteYAMLWithIndent(data interface{}, filePath string) error {
 		return fmt.Errorf("failed to encode YAML to %s: %w", filePath, err)
 	}
 
-	// Set file permissions to 0644
 	if err := os.Chmod(filePath, 0o644); err != nil {
 		return fmt.Errorf("failed to set permissions on %s: %w", filePath, err)
 	}

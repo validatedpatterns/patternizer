@@ -13,25 +13,21 @@ import (
 
 // runInit handles the initialization logic for the init command.
 func runInit(withSecrets bool) error {
-	// Get pattern name and repository root
 	patternName, repoRoot, err := pattern.GetPatternNameAndRepoRoot()
 	if err != nil {
 		return fmt.Errorf("error getting pattern information: %w", err)
 	}
 
-	// Find Helm charts in the repository
 	chartPaths, err := helm.FindTopLevelCharts(repoRoot)
 	if err != nil {
 		return fmt.Errorf("error finding Helm charts: %w", err)
 	}
 
-	// Process values-global.yaml
 	actualPatternName, clusterGroupName, err := pattern.ProcessGlobalValues(patternName, repoRoot, withSecrets)
 	if err != nil {
 		return fmt.Errorf("error processing global values: %w", err)
 	}
 
-	// Process cluster group values using the actual pattern name and cluster group name from the global values
 	if err := pattern.ProcessClusterGroupValues(actualPatternName, clusterGroupName, repoRoot, chartPaths, withSecrets); err != nil {
 		return fmt.Errorf("error processing cluster group values: %w", err)
 	}

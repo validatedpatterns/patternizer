@@ -124,9 +124,7 @@ func verifyClusterGroupValues(valuesFile string, expectedClusterGroupValues *typ
 }
 
 func createTestDir() string {
-	dir, err := os.MkdirTemp("", "patternizer-test")
-	Expect(err).NotTo(HaveOccurred())
-	return dir
+	return GinkgoT().TempDir()
 }
 
 func runCLI(dir string, args ...string) *gexec.Session {

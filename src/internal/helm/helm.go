@@ -1,6 +1,7 @@
 package helm
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -17,11 +18,9 @@ func IsHelmChart(path string) bool {
 	_, valuesErr := os.Stat(valuesYamlPath)
 	templatesInfo, templatesErr := os.Stat(templatesDirPath)
 
-	// If any of the essential files don't exist, it's not a chart.
 	if os.IsNotExist(chartErr) || os.IsNotExist(valuesErr) || os.IsNotExist(templatesErr) {
 		return false
 	}
-	// The 'templates' path must be a directory.
 	if !templatesInfo.IsDir() {
 		return false
 	}
@@ -57,7 +56,7 @@ func FindTopLevelCharts(rootDir string) ([]string, error) {
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("walk directory %s: %w", rootDir, err)
 	}
 	return charts, nil
 }

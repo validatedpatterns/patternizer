@@ -10,6 +10,7 @@ import (
 
 var skillTargets = []string{".claude", ".cursor"}
 
+// InstallSkills copies all embedded skill directories into the .claude and .cursor skill directories under the given repository root.
 func InstallSkills(repoRoot string) error {
 	entries, err := fs.ReadDir(embedded.Skills, "skills")
 	if err != nil {

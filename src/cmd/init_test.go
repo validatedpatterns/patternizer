@@ -61,10 +61,6 @@ var _ = Describe("patternizer init", func() {
 			_ = runCLI(tempDir, "init")
 		})
 
-		AfterAll(func() {
-			os.RemoveAll(tempDir)
-		})
-
 		It("should copy the common pattern scaffold files", func() {
 			verifyScaffoldFilesCopied(tempDir)
 		})
@@ -116,10 +112,6 @@ var _ = Describe("patternizer init", func() {
 			addDummyChart(tempDir, "test-app1")
 			addDummyChart(tempDir, "test-app2")
 			_ = runCLI(tempDir, "init")
-		})
-
-		AfterAll(func() {
-			os.RemoveAll(tempDir)
 		})
 
 		It("should copy the common pattern scaffold files", func() {
@@ -182,10 +174,6 @@ var _ = Describe("patternizer init", func() {
 			_ = runCLI(tempDir, "init")
 		})
 
-		AfterAll(func() {
-			os.RemoveAll(tempDir)
-		})
-
 		It("should copy the common pattern scaffold files", func() {
 			verifyScaffoldFilesCopied(tempDir)
 		})
@@ -233,10 +221,6 @@ var _ = Describe("patternizer init", func() {
 			Expect(os.WriteFile(filepath.Join(tempDir, "values-global.yaml"), []byte(customGlobalValues), 0o644)).To(Succeed())
 			Expect(os.WriteFile(filepath.Join(tempDir, "values-test.yaml"), []byte(customClusterGroupValues), 0o644)).To(Succeed())
 			_ = runCLI(tempDir, "init")
-		})
-
-		AfterAll(func() {
-			os.RemoveAll(tempDir)
 		})
 
 		It("should copy the common pattern scaffold files", func() {
@@ -297,10 +281,6 @@ var _ = Describe("patternizer init", func() {
 			_ = runCLI(tempDir, "init")
 		})
 
-		AfterAll(func() {
-			os.RemoveAll(tempDir)
-		})
-
 		It("should respect the explicit singleArgoCD override", func() {
 			globalValuesFile := filepath.Join(tempDir, "values-global.yaml")
 			expectedGlobalValues := types.ValuesGlobal{
@@ -331,10 +311,6 @@ var _ = Describe("patternizer init --with-secrets", func() {
 		BeforeAll(func() {
 			tempDir = createTestDir()
 			_ = runCLI(tempDir, "init", "--with-secrets")
-		})
-
-		AfterAll(func() {
-			os.RemoveAll(tempDir)
 		})
 
 		It("should copy the common pattern scaffold files", func() {
@@ -417,10 +393,6 @@ var _ = Describe("patternizer init --with-secrets", func() {
 			addDummyChart(tempDir, "test-app1")
 			addDummyChart(tempDir, "test-app2")
 			_ = runCLI(tempDir, "init", "--with-secrets")
-		})
-
-		AfterAll(func() {
-			os.RemoveAll(tempDir)
 		})
 
 		It("should copy the common pattern scaffold files", func() {
@@ -515,10 +487,6 @@ var _ = Describe("patternizer init --with-secrets", func() {
 			_ = runCLI(tempDir, "init", "--with-secrets")
 		})
 
-		AfterAll(func() {
-			os.RemoveAll(tempDir)
-		})
-
 		It("should copy the common pattern scaffold files", func() {
 			verifyScaffoldFilesCopied(tempDir)
 		})
@@ -600,10 +568,6 @@ var _ = Describe("patternizer init --with-secrets", func() {
 			addDummyChart(tempDir, "test-app2")
 			_ = runCLI(tempDir, "init")
 			_ = runCLI(tempDir, "init", "--with-secrets")
-		})
-
-		AfterAll(func() {
-			os.RemoveAll(tempDir)
 		})
 
 		It("should copy the secrets template file", func() {
@@ -695,10 +659,6 @@ var _ = Describe("patternizer init --with-secrets", func() {
 			_ = runCLI(tempDir, "init", "--with-secrets")
 		})
 
-		AfterAll(func() {
-			os.RemoveAll(tempDir)
-		})
-
 		It("should copy the common pattern scaffold files", func() {
 			verifyScaffoldFilesCopied(tempDir)
 		})
@@ -787,10 +747,6 @@ var _ = Describe("patternizer init --with-secrets", func() {
 			tempDir = createTestDir()
 			Expect(os.WriteFile(filepath.Join(tempDir, "values-secret.yaml.template"), []byte(customSecretTemplate), 0o644)).To(Succeed())
 			_ = runCLI(tempDir, "init", "--with-secrets")
-		})
-
-		AfterAll(func() {
-			os.RemoveAll(tempDir)
 		})
 
 		It("should not modify the secrets template file", func() {
