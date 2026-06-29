@@ -12,8 +12,7 @@ import (
 )
 
 // GetPatternNameAndRepoRoot returns the pattern name and repository root directory.
-// It attempts to detect the pattern name from the Git repository URL,
-// falling back to the directory name if Git is not available.
+// The pattern name is derived from the basename of the current working directory.
 func GetPatternNameAndRepoRoot() (patternName, repoRoot string, err error) {
 	// Get the current working directory
 	repoRoot, err = os.Getwd()

@@ -15,8 +15,6 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=${GOARCH} go build -a -installsuffix cgo -o 
 # Runtime stage
 FROM registry.access.redhat.com/ubi10/ubi-minimal:10.0
 
-RUN microdnf --disableplugin=subscription-manager install -y git
-
 COPY --from=builder /build/patternizer /usr/local/bin/patternizer
 
 ARG PATTERNIZER_RESOURCES_DIR=/tmp/resources
