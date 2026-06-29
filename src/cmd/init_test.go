@@ -272,6 +272,22 @@ var _ = Describe("patternizer init", func() {
 		})
 	})
 
+	for _, alias := range []string{"create", "bootstrap"} {
+		alias := alias
+		Context("using the "+alias+" alias on an empty directory", Ordered, func() {
+			var tempDir string
+
+			BeforeAll(func() {
+				tempDir = createTestDir()
+				_ = runCLI(tempDir, alias)
+			})
+
+			It("should produce the same result as init", func() {
+				verifyScaffoldFilesCopied(tempDir)
+			})
+		})
+	}
+
 	Context("on a directory with singleArgoCD explicitly set to false", Ordered, func() {
 		var tempDir string
 

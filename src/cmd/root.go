@@ -21,8 +21,9 @@ values-global.yaml, values-<clustergroup>.yaml, and optional secrets configurati
 	}
 
 	var initCmd = &cobra.Command{
-		Use:   "init",
-		Short: "Initialize pattern files",
+		Use:     "init",
+		Aliases: []string{"create", "bootstrap"},
+		Short:   "Initialize pattern files",
 		Long: `Initialize pattern files creates or updates the necessary YAML configuration files
 for a validated pattern, including values-global.yaml and values-<clustergroup>.yaml.
 
@@ -41,8 +42,9 @@ configures the pattern.sh script for secrets usage.`,
 	rootCmd.AddCommand(initCmd)
 
 	var upgradeCmd = &cobra.Command{
-		Use:   "upgrade",
-		Short: "Upgrade an existing pattern repository",
+		Use:     "upgrade",
+		Aliases: []string{"update"},
+		Short:   "Upgrade an existing pattern repository",
 		Long: `Upgrade an existing pattern repository by refreshing common assets.
 
 This will remove the legacy common/ directory and pattern.sh symlink if present,

@@ -97,6 +97,24 @@ var _ = Describe("patternizer upgrade", func() {
 	})
 })
 
+var _ = Describe("patternizer update (upgrade alias)", func() {
+	Context("on a repo using common", Ordered, func() {
+		var tempDir string
+
+		BeforeAll(func() {
+			tempDir = createTestDir()
+			cloneMCGWithCommon(tempDir)
+			_ = runCLI(tempDir, "update")
+		})
+
+		It("should produce the same result as upgrade", func() {
+			verifyPattenShCopied(tempDir)
+			verifyMakefileCommonCopied(tempDir)
+			verifyAnsibleCfgCopied(tempDir)
+		})
+	})
+})
+
 var _ = Describe("patternizer upgrade --replace-makefile", func() {
 	Context("on a repo using common", Ordered, func() {
 		var tempDir string
