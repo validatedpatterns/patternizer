@@ -1,6 +1,6 @@
 # Patternizer
 
-![Version: 2.0.0](https://img.shields.io/badge/Version-2.0.0-informational?style=flat-square)
+![Version: 2.1.0](https://img.shields.io/badge/Version-2.1.0-informational?style=flat-square)
 [![Quay Repository](https://img.shields.io/badge/Quay.io-patternizer-blue?logo=quay)](https://quay.io/repository/validatedpatterns/patternizer)
 [![CI Pipeline](https://github.com/validatedpatterns/patternizer/actions/workflows/build-push.yaml/badge.svg?branch=main)](https://github.com/validatedpatterns/patternizer/actions/workflows/build-push.yaml)
 
@@ -16,6 +16,7 @@
       - [**Initialize without secrets:**](#initialize-without-secrets)
       - [**Initialize with secrets support:**](#initialize-with-secrets-support)
       - [**Upgrade an existing pattern repository:**](#upgrade-an-existing-pattern-repository)
+      - [**Shell alias (optional):**](#shell-alias-optional)
     - [Understanding Secrets Management](#understanding-secrets-management)
     - [Generated Files](#generated-files)
     - [AI Coding Skills](#ai-coding-skills)
@@ -105,6 +106,21 @@ podman run --pull=newer -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/pat
 # Replace your Makefile with the default from Patternizer
 podman run --pull=newer -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer upgrade --replace-makefile
 ```
+
+#### **Shell alias (optional):**
+
+You can shorten the patternizer command by adding a shell function to your shell's startup file (e.g. `~/.bashrc` or `~/.zshrc`):
+
+```bash
+pattern() {
+  podman run --pull=newer \
+    -v "$PWD:$PWD:z" \
+    -w "$PWD" \
+    quay.io/validatedpatterns/patternizer "$@"
+}
+```
+
+Then run commands as `pattern init`, `pattern upgrade`, etc.
 
 What upgrade does:
 
