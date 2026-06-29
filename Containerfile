@@ -17,18 +17,5 @@ FROM registry.access.redhat.com/ubi10/ubi-minimal:10.0
 
 COPY --from=builder /build/patternizer /usr/local/bin/patternizer
 
-ARG PATTERNIZER_RESOURCES_DIR=/tmp/resources
-WORKDIR ${PATTERNIZER_RESOURCES_DIR}
-
-COPY resources/* .
-
-ARG PATTERNIZER_SKILLS_DIR=/tmp/skills
-WORKDIR ${PATTERNIZER_SKILLS_DIR}
-
-COPY skills/ .
-
-ENV PATTERNIZER_RESOURCES_DIR=${PATTERNIZER_RESOURCES_DIR}
-ENV PATTERNIZER_SKILLS_DIR=${PATTERNIZER_SKILLS_DIR}
-
 ENTRYPOINT ["patternizer"]
 CMD ["help"]

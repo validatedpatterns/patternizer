@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/validatedpatterns/patternizer/internal/embedded"
 	"github.com/validatedpatterns/patternizer/internal/fileutils"
 	"github.com/validatedpatterns/patternizer/internal/helm"
 	"github.com/validatedpatterns/patternizer/internal/pattern"
@@ -35,44 +36,27 @@ func runInit(withSecrets bool) error {
 		return fmt.Errorf("error processing cluster group values: %w", err)
 	}
 
-	// Copy pattern.sh and Makefile from resources
-	resourcesDir, err := fileutils.GetResourcesPath()
-	if err != nil {
-		return fmt.Errorf("error getting resource path: %w", err)
-	}
-
-	patternShSrc := filepath.Join(resourcesDir, "pattern.sh")
-	patternShDst := filepath.Join(repoRoot, "pattern.sh")
-	if err := fileutils.CopyFile(patternShSrc, patternShDst); err != nil {
+	if err := fileutils.WriteEmbeddedFile(embedded.Resources, "resources/pattern.sh", filepath.Join(repoRoot, "pattern.sh"), 0o755); err != nil {
 		return fmt.Errorf("error copying pattern.sh: %w", err)
 	}
 
-	// Always copy ansible.cfg to the pattern repo
-	ansibleCfgSrc := filepath.Join(resourcesDir, "ansible.cfg")
-	ansibleCfgDst := filepath.Join(repoRoot, "ansible.cfg")
-	if err := fileutils.CopyFile(ansibleCfgSrc, ansibleCfgDst); err != nil {
+	if err := fileutils.WriteEmbeddedFile(embedded.Resources, "resources/ansible.cfg", filepath.Join(repoRoot, "ansible.cfg"), 0o644); err != nil {
 		return fmt.Errorf("error copying ansible.cfg: %w", err)
 	}
 
-	// Always copy Makefile-common to the pattern repo
-	makefilePatternSrc := filepath.Join(resourcesDir, "Makefile-common")
-	makefilePatternDst := filepath.Join(repoRoot, "Makefile-common")
-	if err := fileutils.CopyFile(makefilePatternSrc, makefilePatternDst); err != nil {
+	if err := fileutils.WriteEmbeddedFile(embedded.Resources, "resources/Makefile-common", filepath.Join(repoRoot, "Makefile-common"), 0o644); err != nil {
 		return fmt.Errorf("error copying Makefile-common: %w", err)
 	}
 
-	// Create a simple Makefile that includes Makefile-common (only if it doesn't exist)
-	makefileSrc := filepath.Join(resourcesDir, "Makefile")
 	makefileDst := filepath.Join(repoRoot, "Makefile")
 	if _, err := os.Stat(makefileDst); os.IsNotExist(err) {
-		if err := fileutils.CopyFile(makefileSrc, makefileDst); err != nil {
+		if err := fileutils.WriteEmbeddedFile(embedded.Resources, "resources/Makefile", makefileDst, 0o644); err != nil {
 			return fmt.Errorf("error copying Makefile: %w", err)
 		}
 	}
 
-	// Handle secrets setup if requested
 	if withSecrets {
-		if err := fileutils.HandleSecretsSetup(resourcesDir, repoRoot); err != nil {
+		if err := fileutils.HandleSecretsSetup(embedded.Resources, repoRoot); err != nil {
 			return fmt.Errorf("error setting up secrets: %w", err)
 		}
 	}

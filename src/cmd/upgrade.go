@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/validatedpatterns/patternizer/internal/embedded"
 	"github.com/validatedpatterns/patternizer/internal/fileutils"
 	"github.com/validatedpatterns/patternizer/internal/pattern"
 )
@@ -31,43 +32,30 @@ func runUpgrade(replaceMakefile bool) error {
 		return fmt.Errorf("error removing pattern.sh: %w", err)
 	}
 
-	// Copy resources into repo root
-	resourcesDir, err := fileutils.GetResourcesPath()
-	if err != nil {
-		return fmt.Errorf("error getting resource path: %w", err)
-	}
-
-	// Copy pattern.sh
-	if err := fileutils.CopyFile(filepath.Join(resourcesDir, "pattern.sh"), patternShPath); err != nil {
+	if err := fileutils.WriteEmbeddedFile(embedded.Resources, "resources/pattern.sh", patternShPath, 0o755); err != nil {
 		return fmt.Errorf("error copying pattern.sh: %w", err)
 	}
 
-	// Copy Makefile-common
-	if err := fileutils.CopyFile(filepath.Join(resourcesDir, "Makefile-common"), filepath.Join(repoRoot, "Makefile-common")); err != nil {
+	if err := fileutils.WriteEmbeddedFile(embedded.Resources, "resources/Makefile-common", filepath.Join(repoRoot, "Makefile-common"), 0o644); err != nil {
 		return fmt.Errorf("error copying Makefile-common: %w", err)
 	}
 
-	// Copy ansible.cfg
-	if err := fileutils.CopyFile(filepath.Join(resourcesDir, "ansible.cfg"), filepath.Join(repoRoot, "ansible.cfg")); err != nil {
+	if err := fileutils.WriteEmbeddedFile(embedded.Resources, "resources/ansible.cfg", filepath.Join(repoRoot, "ansible.cfg"), 0o644); err != nil {
 		return fmt.Errorf("error copying ansible.cfg: %w", err)
 	}
 
-	// Makefile handling
-	makefileSrc := filepath.Join(resourcesDir, "Makefile")
 	makefileDst := filepath.Join(repoRoot, "Makefile")
 
 	if replaceMakefile {
-		if err := fileutils.CopyFile(makefileSrc, makefileDst); err != nil {
+		if err := fileutils.WriteEmbeddedFile(embedded.Resources, "resources/Makefile", makefileDst, 0o644); err != nil {
 			return fmt.Errorf("error replacing Makefile: %w", err)
 		}
 	} else {
-		// If Makefile doesn't exist, copy it
 		if _, err := os.Stat(makefileDst); os.IsNotExist(err) {
-			if err := fileutils.CopyFile(makefileSrc, makefileDst); err != nil {
+			if err := fileutils.WriteEmbeddedFile(embedded.Resources, "resources/Makefile", makefileDst, 0o644); err != nil {
 				return fmt.Errorf("error copying Makefile: %w", err)
 			}
 		} else if err == nil {
-			// If Makefile exists, check for include and prepend if missing
 			hasInclude, err := fileutils.FileContainsIncludeMakefileCommon(makefileDst)
 			if err != nil {
 				return fmt.Errorf("error checking Makefile for include: %w", err)

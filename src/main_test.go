@@ -1,34 +1,11 @@
 package main
 
 import (
-	"os"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/validatedpatterns/patternizer/internal/fileutils"
 	"github.com/validatedpatterns/patternizer/internal/types"
 )
-
-var _ = Describe("GetResourcePath", func() {
-	AfterEach(func() {
-		os.Unsetenv("PATTERNIZER_RESOURCES_DIR")
-	})
-
-	It("should return the path when the environment variable is set", func() {
-		os.Setenv("PATTERNIZER_RESOURCES_DIR", "/tmp/test")
-		path, err := fileutils.GetResourcesPath()
-		Expect(err).NotTo(HaveOccurred())
-		Expect(path).To(Equal("/tmp/test"))
-	})
-
-	It("should return an error when the environment variable is unset", func() {
-		os.Unsetenv("PATTERNIZER_RESOURCES_DIR")
-		path, err := fileutils.GetResourcesPath()
-		Expect(err).To(HaveOccurred())
-		Expect(path).To(BeEmpty())
-	})
-})
 
 var _ = Describe("NewDefaultValuesGlobal", func() {
 	It("should create default global values with expected defaults", func() {
