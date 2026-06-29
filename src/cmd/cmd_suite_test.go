@@ -20,7 +20,6 @@ var (
 	binaryPath    string
 	resourcesPath string
 	skillsPath    string
-	projectRoot   string
 )
 
 func TestCmd(t *testing.T) {
@@ -33,18 +32,16 @@ var _ = BeforeSuite(func() {
 
 	wd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
-	projectRoot, err = filepath.Abs(filepath.Join(wd, "..", ".."))
+	srcRoot, err := filepath.Abs(filepath.Join(wd, ".."))
 	Expect(err).NotTo(HaveOccurred())
 
-	resourcesPath = filepath.Join(projectRoot, "resources")
+	resourcesPath = filepath.Join(srcRoot, "internal", "embedded", "resources")
 	Expect(resourcesPath).To(BeADirectory(), "Could not find resources directory")
-	os.Setenv("PATTERNIZER_RESOURCES_DIR", resourcesPath)
 
-	skillsPath = filepath.Join(projectRoot, "skills")
+	skillsPath = filepath.Join(srcRoot, "internal", "embedded", "skills")
 	Expect(skillsPath).To(BeADirectory(), "Could not find skills directory")
-	os.Setenv("PATTERNIZER_SKILLS_DIR", skillsPath)
 
-	binaryPath, err = gexec.Build(filepath.Join(projectRoot, "src"))
+	binaryPath, err = gexec.Build(srcRoot)
 	Expect(err).NotTo(HaveOccurred())
 })
 
@@ -135,10 +132,6 @@ func createTestDir() string {
 func runCLI(dir string, args ...string) *gexec.Session {
 	cmd := exec.Command(binaryPath, args...)
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(),
-		"PATTERNIZER_RESOURCES_DIR="+resourcesPath,
-		"PATTERNIZER_SKILLS_DIR="+skillsPath,
-	)
 
 	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())

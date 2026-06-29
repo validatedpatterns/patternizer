@@ -3,6 +3,7 @@ package fileutils
 import (
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -49,13 +50,11 @@ func CopyFile(src, dst string) error {
 }
 
 // HandleSecretsSetup handles the setup for secrets usage by copying the secrets template.
-func HandleSecretsSetup(resourcesDir, repoRoot string) (err error) {
-	// Copy the values-secret.yaml.template file to the pattern root only if it doesn't already exist
-	secretsTemplateSrc := filepath.Join(resourcesDir, "values-secret.yaml.template")
+func HandleSecretsSetup(fsys fs.FS, repoRoot string) error {
 	secretsTemplateDst := filepath.Join(repoRoot, "values-secret.yaml.template")
 
 	if _, err := os.Stat(secretsTemplateDst); os.IsNotExist(err) {
-		if err = CopyFile(secretsTemplateSrc, secretsTemplateDst); err != nil {
+		if err = WriteEmbeddedFile(fsys, "resources/values-secret.yaml.template", secretsTemplateDst, 0o644); err != nil {
 			return fmt.Errorf("error copying secrets template: %w", err)
 		}
 	}
@@ -63,25 +62,35 @@ func HandleSecretsSetup(resourcesDir, repoRoot string) (err error) {
 	return nil
 }
 
-// GetResourcesPath returns the path to the resources directory.
-// It checks the PATTERNIZER_RESOURCES_DIR environment variable first,
-// and falls back to the current working directory.
-func GetResourcesPath() (path string, err error) {
-	path = os.Getenv("PATTERNIZER_RESOURCES_DIR")
-	if path != "" {
-		return path, nil
+// WriteEmbeddedFile reads a file from an embedded FS and writes it to disk with the given mode.
+func WriteEmbeddedFile(fsys fs.FS, srcPath, dstPath string, mode os.FileMode) error {
+	data, err := fs.ReadFile(fsys, srcPath)
+	if err != nil {
+		return fmt.Errorf("reading embedded file %s: %w", srcPath, err)
 	}
-
-	return "", fmt.Errorf("PATTERNIZER_RESOURCES_DIR environment variable is not set")
+	if err := os.WriteFile(dstPath, data, mode); err != nil {
+		return err
+	}
+	return os.Chmod(dstPath, mode)
 }
 
-func GetSkillsPath() (string, error) {
-	path := os.Getenv("PATTERNIZER_SKILLS_DIR")
-	if path != "" {
-		return path, nil
-	}
+// WriteEmbeddedDir recursively copies an embedded directory tree to disk.
+func WriteEmbeddedDir(fsys fs.FS, srcDir, dstDir string) error {
+	return fs.WalkDir(fsys, srcDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		relPath, err := filepath.Rel(srcDir, path)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(dstDir, relPath)
 
-	return "", fmt.Errorf("PATTERNIZER_SKILLS_DIR environment variable is not set")
+		if d.IsDir() {
+			return os.MkdirAll(target, 0o755)
+		}
+		return WriteEmbeddedFile(fsys, path, target, 0o644)
+	})
 }
 
 // CopyDir recursively copies the contents of src into dst.

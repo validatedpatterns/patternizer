@@ -2,21 +2,18 @@ package fileutils
 
 import (
 	"fmt"
-	"os"
+	"io/fs"
 	"path/filepath"
+
+	"github.com/validatedpatterns/patternizer/internal/embedded"
 )
 
 var skillTargets = []string{".claude", ".cursor"}
 
 func InstallSkills(repoRoot string) error {
-	skillsDir, err := GetSkillsPath()
+	entries, err := fs.ReadDir(embedded.Skills, "skills")
 	if err != nil {
-		return fmt.Errorf("error getting skills path: %w", err)
-	}
-
-	entries, err := os.ReadDir(skillsDir)
-	if err != nil {
-		return fmt.Errorf("error reading skills directory: %w", err)
+		return fmt.Errorf("error reading embedded skills: %w", err)
 	}
 
 	for _, entry := range entries {
@@ -25,11 +22,10 @@ func InstallSkills(repoRoot string) error {
 		}
 
 		skillName := entry.Name()
-		skillSrc := filepath.Join(skillsDir, skillName)
 
 		for _, target := range skillTargets {
 			skillDst := filepath.Join(repoRoot, target, "skills", skillName)
-			if err := CopyDir(skillSrc, skillDst); err != nil {
+			if err := WriteEmbeddedDir(embedded.Skills, "skills/"+skillName, skillDst); err != nil {
 				return fmt.Errorf("error installing skill %s to %s: %w", skillName, target, err)
 			}
 		}

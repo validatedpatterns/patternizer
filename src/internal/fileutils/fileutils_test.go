@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"testing/fstest"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -40,70 +41,64 @@ var _ = Describe("CopyFile", func() {
 
 var _ = Describe("HandleSecretsSetup", func() {
 	It("should copy template when missing and not overwrite when present", func() {
-		resources := GinkgoT().TempDir()
 		repoRoot := GinkgoT().TempDir()
 
-		templatePath := filepath.Join(resources, "values-secret.yaml.template")
-		originalContent := "foo: bar\n"
-		Expect(os.WriteFile(templatePath, []byte(originalContent), 0o644)).To(Succeed())
+		fsys := fstest.MapFS{
+			"resources/values-secret.yaml.template": &fstest.MapFile{Data: []byte("foo: bar\n")},
+		}
 
-		// First call should copy
-		Expect(HandleSecretsSetup(resources, repoRoot)).To(Succeed())
+		Expect(HandleSecretsSetup(fsys, repoRoot)).To(Succeed())
 		copied := filepath.Join(repoRoot, "values-secret.yaml.template")
 		data, err := os.ReadFile(copied)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(string(data)).To(Equal(originalContent))
+		Expect(string(data)).To(Equal("foo: bar\n"))
 
-		// Change the source and call again; destination should remain unchanged
-		Expect(os.WriteFile(templatePath, []byte("baz: qux\n"), 0o644)).To(Succeed())
-		Expect(HandleSecretsSetup(resources, repoRoot)).To(Succeed())
+		Expect(HandleSecretsSetup(fsys, repoRoot)).To(Succeed())
 		data2, err := os.ReadFile(copied)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(string(data2)).To(Equal(originalContent))
+		Expect(string(data2)).To(Equal("foo: bar\n"))
 	})
 })
 
-var _ = Describe("GetResourcesPath", func() {
-	It("should return the path when the environment variable is set", func() {
-		old := os.Getenv("PATTERNIZER_RESOURCES_DIR")
-		DeferCleanup(func() { os.Setenv("PATTERNIZER_RESOURCES_DIR", old) })
+var _ = Describe("WriteEmbeddedFile", func() {
+	It("should write file contents with the specified mode", func() {
+		dir := GinkgoT().TempDir()
+		dst := filepath.Join(dir, "out.txt")
 
-		tmp := GinkgoT().TempDir()
-		Expect(os.Setenv("PATTERNIZER_RESOURCES_DIR", tmp)).To(Succeed())
-		got, err := GetResourcesPath()
+		fsys := fstest.MapFS{
+			"resources/test.txt": &fstest.MapFile{Data: []byte("hello embedded")},
+		}
+
+		Expect(WriteEmbeddedFile(fsys, "resources/test.txt", dst, 0o755)).To(Succeed())
+
+		data, err := os.ReadFile(dst)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(got).To(Equal(tmp))
-	})
+		Expect(string(data)).To(Equal("hello embedded"))
 
-	It("should return an error when the environment variable is unset", func() {
-		old := os.Getenv("PATTERNIZER_RESOURCES_DIR")
-		DeferCleanup(func() { os.Setenv("PATTERNIZER_RESOURCES_DIR", old) })
-
-		Expect(os.Unsetenv("PATTERNIZER_RESOURCES_DIR")).To(Succeed())
-		_, err := GetResourcesPath()
-		Expect(err).To(HaveOccurred())
+		info, err := os.Stat(dst)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(info.Mode().Perm()).To(Equal(os.FileMode(0o755).Perm()))
 	})
 })
 
-var _ = Describe("GetSkillsPath", func() {
-	It("should return the path when the environment variable is set", func() {
-		old := os.Getenv("PATTERNIZER_SKILLS_DIR")
-		DeferCleanup(func() { os.Setenv("PATTERNIZER_SKILLS_DIR", old) })
+var _ = Describe("WriteEmbeddedDir", func() {
+	It("should recursively write an embedded directory tree", func() {
+		dst := filepath.Join(GinkgoT().TempDir(), "output")
 
-		tmp := GinkgoT().TempDir()
-		Expect(os.Setenv("PATTERNIZER_SKILLS_DIR", tmp)).To(Succeed())
-		got, err := GetSkillsPath()
+		fsys := fstest.MapFS{
+			"skills/myskill/SKILL.md":     &fstest.MapFile{Data: []byte("skill content")},
+			"skills/myskill/reference.md": &fstest.MapFile{Data: []byte("ref content")},
+		}
+
+		Expect(WriteEmbeddedDir(fsys, "skills/myskill", dst)).To(Succeed())
+
+		got1, err := os.ReadFile(filepath.Join(dst, "SKILL.md"))
 		Expect(err).NotTo(HaveOccurred())
-		Expect(got).To(Equal(tmp))
-	})
+		Expect(string(got1)).To(Equal("skill content"))
 
-	It("should return an error when the environment variable is unset", func() {
-		old := os.Getenv("PATTERNIZER_SKILLS_DIR")
-		DeferCleanup(func() { os.Setenv("PATTERNIZER_SKILLS_DIR", old) })
-
-		Expect(os.Unsetenv("PATTERNIZER_SKILLS_DIR")).To(Succeed())
-		_, err := GetSkillsPath()
-		Expect(err).To(HaveOccurred())
+		got2, err := os.ReadFile(filepath.Join(dst, "reference.md"))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(string(got2)).To(Equal("ref content"))
 	})
 })
 
