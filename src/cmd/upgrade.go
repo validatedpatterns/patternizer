@@ -12,22 +12,18 @@ import (
 
 // runUpgrade handles the upgrade logic for the upgrade command.
 func runUpgrade(replaceMakefile bool) error {
-	// Determine repository root
 	_, repoRoot, err := pattern.GetPatternNameAndRepoRoot()
 	if err != nil {
 		return fmt.Errorf("error getting pattern information: %w", err)
 	}
 
-	// Paths
 	commonDirPath := filepath.Join(repoRoot, "common")
 	patternShPath := filepath.Join(repoRoot, "pattern.sh")
 
-	// Remove common/ directory if it exists
 	if err := fileutils.RemovePathIfExists(commonDirPath); err != nil {
 		return fmt.Errorf("error removing common directory: %w", err)
 	}
 
-	// Remove ./pattern.sh if it exists (symlink or file)
 	if err := fileutils.RemovePathIfExists(patternShPath); err != nil {
 		return fmt.Errorf("error removing pattern.sh: %w", err)
 	}

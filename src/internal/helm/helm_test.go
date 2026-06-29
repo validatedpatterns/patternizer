@@ -10,8 +10,7 @@ import (
 
 // createTestChartStructure creates a comprehensive test directory structure for helm chart testing.
 func createTestChartStructure() string {
-	tempDir, err := os.MkdirTemp("", "helm-test-*")
-	Expect(err).NotTo(HaveOccurred())
+	tempDir := GinkgoT().TempDir()
 
 	// chart1 (valid top-level chart)
 	chart1Dir := filepath.Join(tempDir, "chart1")
@@ -69,7 +68,6 @@ func createTestChartStructure() string {
 var _ = Describe("FindTopLevelCharts", func() {
 	It("should only return top-level charts and skip sub-charts and non-chart directories", func() {
 		tempDir := createTestChartStructure()
-		defer os.RemoveAll(tempDir)
 
 		charts, err := FindTopLevelCharts(tempDir)
 		Expect(err).NotTo(HaveOccurred())
@@ -90,10 +88,6 @@ var _ = Describe("IsHelmChart", func() {
 
 	BeforeEach(func() {
 		tempDir = createTestChartStructure()
-	})
-
-	AfterEach(func() {
-		os.RemoveAll(tempDir)
 	})
 
 	DescribeTable("should correctly identify helm charts",

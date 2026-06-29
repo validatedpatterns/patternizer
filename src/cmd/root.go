@@ -29,7 +29,6 @@ for a validated pattern, including values-global.yaml and values-<clustergroup>.
 When --with-secrets is specified, it also copies the secrets template and
 configures the pattern.sh script for secrets usage.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Check if "help" is passed as an argument
 			if len(args) > 0 && args[0] == "help" {
 				return cmd.Help()
 			}

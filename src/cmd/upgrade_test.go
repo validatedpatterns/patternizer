@@ -51,10 +51,6 @@ var _ = Describe("patternizer upgrade", func() {
 			_ = runCLI(tempDir, "upgrade")
 		})
 
-		AfterAll(func() {
-			os.RemoveAll(tempDir)
-		})
-
 		It("should copy the common scaffold files (except Makefile)", func() {
 			verifyPattenShCopied(tempDir)
 			verifyMakefileCommonCopied(tempDir)
@@ -92,10 +88,6 @@ var _ = Describe("patternizer upgrade", func() {
 			_ = runCLI(tempDir, "upgrade")
 		})
 
-		AfterAll(func() {
-			os.RemoveAll(tempDir)
-		})
-
 		It("should not update Makefiles that already include Makefile-common", func() {
 			f, err := os.ReadFile(filepath.Join(tempDir, "Makefile"))
 			Expect(err).NotTo(HaveOccurred())
@@ -113,10 +105,6 @@ var _ = Describe("patternizer upgrade --replace-makefile", func() {
 			tempDir = createTestDir()
 			cloneMCGWithCommon(tempDir)
 			_ = runCLI(tempDir, "upgrade", "--replace-makefile")
-		})
-
-		AfterAll(func() {
-			os.RemoveAll(tempDir)
 		})
 
 		It("should update the common scaffold files (including Makefile)", func() {

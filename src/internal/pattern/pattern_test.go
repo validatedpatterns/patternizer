@@ -35,9 +35,7 @@ var _ = Describe("ProcessGlobalValues", func() {
 		)
 
 		BeforeEach(func() {
-			var err error
-			tempDir, err = os.MkdirTemp("", "pattern-test-*")
-			Expect(err).NotTo(HaveOccurred())
+			tempDir = GinkgoT().TempDir()
 
 			initialValues := map[string]interface{}{
 				"global": map[string]interface{}{
@@ -67,10 +65,6 @@ var _ = Describe("ProcessGlobalValues", func() {
 			initialYaml, err := yaml.Marshal(initialValues)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(os.WriteFile(valuesPath, initialYaml, 0o644)).To(Succeed())
-		})
-
-		AfterEach(func() {
-			os.RemoveAll(tempDir)
 		})
 
 		It("should preserve all custom fields", func() {
@@ -119,13 +113,7 @@ var _ = Describe("ProcessGlobalValues", func() {
 		var tempDir string
 
 		BeforeEach(func() {
-			var err error
-			tempDir, err = os.MkdirTemp("", "pattern-test-*")
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		AfterEach(func() {
-			os.RemoveAll(tempDir)
+			tempDir = GinkgoT().TempDir()
 		})
 
 		It("should create the file with defaults", func() {
@@ -155,13 +143,7 @@ var _ = Describe("ProcessGlobalValues", func() {
 		var tempDir string
 
 		BeforeEach(func() {
-			var err error
-			tempDir, err = os.MkdirTemp("", "pattern-test-*")
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		AfterEach(func() {
-			os.RemoveAll(tempDir)
+			tempDir = GinkgoT().TempDir()
 		})
 
 		It("should set SecretLoader.Disabled to false", func() {
@@ -193,9 +175,7 @@ var _ = Describe("ProcessClusterGroupValues", func() {
 		)
 
 		BeforeEach(func() {
-			var err error
-			tempDir, err = os.MkdirTemp("", "pattern-test-*")
-			Expect(err).NotTo(HaveOccurred())
+			tempDir = GinkgoT().TempDir()
 
 			initialValues := map[string]interface{}{
 				"clusterGroup": map[string]interface{}{
@@ -231,10 +211,6 @@ var _ = Describe("ProcessClusterGroupValues", func() {
 			initialYaml, err := yaml.Marshal(initialValues)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(os.WriteFile(valuesPath, initialYaml, 0o644)).To(Succeed())
-		})
-
-		AfterEach(func() {
-			os.RemoveAll(tempDir)
 		})
 
 		It("should preserve custom fields", func() {
