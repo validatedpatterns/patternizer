@@ -69,6 +69,10 @@ var _ = Describe("patternizer init", func() {
 			verifySkillsInstalled(tempDir)
 		})
 
+		It("should create a pattern-metadata.yaml file", func() {
+			verifyPatternMetadataCreated(tempDir, filepath.Base(tempDir))
+		})
+
 		It("should create an appropriate global values file", func() {
 			globalValuesFile := filepath.Join(tempDir, "values-global.yaml")
 			expectedGlobalValues := types.ValuesGlobal{
@@ -759,6 +763,25 @@ var _ = Describe("patternizer init --with-secrets", func() {
 			actual, err := os.ReadFile(filepath.Join(tempDir, "values-secret.yaml.template"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(string(actual)).To(Equal(customSecretTemplate))
+		})
+	})
+})
+
+var _ = Describe("patternizer init pattern-metadata", func() {
+	Context("on a directory with an existing pattern-metadata.yaml", Ordered, func() {
+		var tempDir string
+		const existingContent = "metadata_version: \"1.0\"\nname: custom-name\n"
+
+		BeforeAll(func() {
+			tempDir = createTestDir()
+			Expect(os.WriteFile(filepath.Join(tempDir, "pattern-metadata.yaml"), []byte(existingContent), 0o644)).To(Succeed())
+			_ = runCLI(tempDir, "init")
+		})
+
+		It("should not overwrite the existing pattern-metadata.yaml", func() {
+			actual, err := os.ReadFile(filepath.Join(tempDir, "pattern-metadata.yaml"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(actual)).To(Equal(existingContent))
 		})
 	})
 })
