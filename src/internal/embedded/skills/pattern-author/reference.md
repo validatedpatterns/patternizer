@@ -2,13 +2,13 @@
 
 [Validated Patterns](https://validatedpatterns.io/) are an advanced form of reference architectures that offer a streamlined approach to deploying complex business solutions.
 
-Validated Patterns are GitOps-based. A Validated Pattern is a git repo containing the values files for the [clustergroup helm chart](https://github.com/validatedpatterns/clustergroup-chart/).
+Validated Patterns are GitOps-based. A Validated Pattern is a Git repository containing the values files for the [clustergroup helm chart](https://github.com/validatedpatterns/clustergroup-chart/).
 
-Validated Patterns are installed via the [Validated Patterns Operator](https://github.com/validatedpatterns/patterns-operator) (available as a community operator in OpenShift's operator catalog). The operator creates and manages a subscription for OpenShift GitOps (ArgoCD) and creates the app-of-apps Application in ArgoCD — the clustergroup chart with values taken from the Pattern repo (as a multi-source ArgoCD Application).
+Validated Patterns are installed via the [Validated Patterns Operator](https://github.com/validatedpatterns/patterns-operator) (available as a community operator in OpenShift's operator catalog). The operator creates and manages a subscription for OpenShift GitOps (ArgoCD) and creates the app-of-apps Application in ArgoCD — the clustergroup chart with values taken from the Pattern repository (as a multi-source ArgoCD Application).
 
-# Creating a New Pattern
+## Creating a New Pattern
 
-1. Create an empty directory (or create a new repo on GitHub/GitLab and clone it). The directory name becomes the Pattern name.
+1. Create an empty directory (or create a new repository on GitHub/GitLab and clone it). The directory name becomes the Pattern name.
 2. Run `podman run --pull=newer -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer init` to create the new Pattern. Add `--with-secrets` to include the necessary components for the Validated Patterns secret framework:
    `podman run --pull=newer -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer init --with-secrets`
 
@@ -27,9 +27,9 @@ pattern() {
 
 Then run `pattern init` or `pattern init --with-secrets`.
 
-`pattern init` is idempotent. You can add secrets to a Pattern initialized without them by running `pattern init --with-secrets` later. You can also re-run `pattern init` as you add helm charts to the repo and it will wire them into the clustergroup values file.
+`pattern init` is idempotent. You can add secrets to a Pattern initialized without them by running `pattern init --with-secrets` later. You can also re-run `pattern init` as you add helm charts to the repository and it will wire them into the clustergroup values file.
 
-# Pattern File Structure
+## Pattern File Structure
 
 Given a fresh Pattern directory with a user-defined helm chart:
 
@@ -43,7 +43,7 @@ pattern init --with-secrets
 
 The resulting structure:
 
-```
+```text
 fresh-pattern
 ├── ansible.cfg
 ├── charts
@@ -56,11 +56,11 @@ fresh-pattern
 └── values-secret.yaml.template
 ```
 
-## File Descriptions
+### File Descriptions
 
-`ansible.cfg` contains defaults for the ansible playbooks invoked via the Makefile (e.g., `make install`). These playbooks are defined in the [rhvp.cluster_utils collection](https://github.com/validatedpatterns/rhvp.cluster_utils).
+`ansible.cfg` contains defaults for the Ansible playbooks invoked via the Makefile (e.g., `make install`). These playbooks are defined in the [rhvp.cluster_utils collection](https://github.com/validatedpatterns/rhvp.cluster_utils).
 
-`charts/` is the recommended location for local helm charts. `pattern init` discovers charts anywhere in the repo, but `charts/` is the convention.
+`charts/` is the recommended location for local helm charts. `pattern init` discovers charts anywhere in the repository, but `charts/` is the convention.
 
 `Makefile` includes `Makefile-common` and provides a place for Pattern-specific make targets or overrides. Most Patterns never need to override the common targets, but it's useful for custom tests, linting, or convenience functions.
 
@@ -68,9 +68,9 @@ fresh-pattern
 
 `pattern.sh` is the wrapper script that runs make targets inside the utility container.
 
-`values-secret.yaml.template` is a template showing how the Pattern's secrets should be formatted for the [secrets framework](#the-secrets-framework). This file should never contain real secrets. Copy it to your home directory (`cp values-secret.yaml.template ~/values-secret-fresh-pattern.yaml`) so secrets stay on your local machine, not in your git repo.
+`values-secret.yaml.template` is a template showing how the Pattern's secrets should be formatted for the [secrets framework](#the-secrets-framework). This file should never contain real secrets. Copy it to your home directory (`cp values-secret.yaml.template ~/values-secret-fresh-pattern.yaml`) so secrets stay on your local machine, not in your Git repository.
 
-## values-global.yaml
+### values-global.yaml
 
 ```yaml
 global:
@@ -85,7 +85,7 @@ main:
     clusterGroupChartVersion: 0.9.*
 ```
 
-### Field Reference
+#### Field Reference
 
 `global.pattern` — The Pattern name, taken from the directory name by patternizer. Used as a label on ArgoCD Applications and as part of the ArgoCD namespace name.
 
@@ -97,7 +97,7 @@ main:
 
 `main.multiSourceConfig.enabled` — Enable ArgoCD multi-source applications. Should always be `true` for modern Patterns.
 
-`main.multiSourceConfig.clusterGroupChartVersion` — Semver constraint for the clustergroup chart version from the VP chart repository.
+`main.multiSourceConfig.clusterGroupChartVersion` — SemVer constraint for the clustergroup chart version from the VP chart repository.
 
 There are also some global options that can be set in `values-global.yaml` but are not included by default:
 
@@ -107,11 +107,11 @@ There are also some global options that can be set in `values-global.yaml` but a
 
 `global.options.useCSV` — When `True` (the default), subscriptions include a `startingCSV` field if their `.csv` value is set.
 
-## values-prod.yaml
+### values-prod.yaml
 
 `values-prod.yaml` is the values file that defines the main clustergroup of the Pattern. In hub/spoke Patterns (see [Spoke clusters](#spoke-clusters)) this would be the hub cluster. In single cluster Patterns this defines the solitary cluster. If there is one file to look at which defines the Pattern, it is this one. Its contents are explored in [The clustergroup values](#the-clustergroup-values) section.
 
-## The Pattern CR
+### The Pattern CR
 
 When you run `./pattern.sh make install` to deploy the Pattern, the values in `values-global.yaml` are passed to the [pattern-install chart](https://github.com/validatedpatterns/pattern-install-chart) by the [rhvp.cluster_utils.install](https://github.com/validatedpatterns/rhvp.cluster_utils/blob/main/playbooks/install.yml) playbook. This chart creates a subscription for the Validated Patterns Operator, a configmap with default operator configuration, and the Pattern CR:
 
@@ -133,7 +133,7 @@ spec:
 
 Your branch (`main` in this example) must have an upstream remote set and be pushed to that remote.
 
-# Values File Hierarchy
+## Values File Hierarchy
 
 When the Patterns Operator creates the app-of-apps representing the Pattern, it renders the [clustergroup chart](https://github.com/validatedpatterns/clustergroup-chart/) and automatically includes certain values files (if they exist) to customize resources for a given clustergroup, OCP version, and platform.
 
@@ -152,11 +152,11 @@ The following values files are automatically included for each application, in t
 
 ArgoCD is configured with `ignoreMissingValueFiles: true`, so it silently skips any of these files that do not exist. Only create the files you actually need.
 
-In multi-source mode (the default), values files from the Pattern repo are prefixed with `$patternref/` to tell ArgoCD which source they come from. This is handled automatically by the clustergroup chart.
+In multi-source mode (the default), values files from the Pattern repository are prefixed with `$patternref/` to tell ArgoCD which source they come from. This is handled automatically by the clustergroup chart.
 
 Some of these values files are cross-clustergroup. For example, `values-AWS.yaml` would apply to both hub and spoke clustergroups running on AWS.
 
-## Shared Value Files
+### Shared Value Files
 
 The clustergroup provides a `sharedValueFiles` field for including additional overrides for all applications in that clustergroup:
 
@@ -172,9 +172,9 @@ clusterGroup:
 
 These paths support Helm template interpolation. The Validated Patterns operator handles resolving the global variables. As with the auto-included files, any that do not exist are silently skipped.
 
-By convention, extra value files are placed in an `overrides/` directory in the Pattern repo, but any location works.
+By convention, extra value files are placed in an `overrides/` directory in the Pattern repository, but any location works.
 
-## Custom Globals for Conditional Overrides
+### Custom Globals for Conditional Overrides
 
 You can define your own global variables in `values-global.yaml` and use them in `sharedValueFiles` to enable conditional configuration. Consider this example:
 
@@ -275,9 +275,9 @@ clusterGroup:
 
 This example leverages the `global.device` value to install GPU-specific subscriptions and create an additional machineset when deployed to AWS with a GPU.
 
-# The Clustergroup Values
+## The Clustergroup Values
 
-A Pattern IS a clustergroup. The git repo containing a Validated Pattern contains the values files for the [clustergroup helm chart](https://github.com/validatedpatterns/clustergroup-chart/). The clustergroup values file (`values-<clusterGroupName>.yaml`) is the central definition of what a Pattern deploys — which namespaces to create, which operators to install, and which applications (helm charts) to run.
+A Pattern IS a clustergroup. The Git repository containing a Validated Pattern contains the values files for the [clustergroup helm chart](https://github.com/validatedpatterns/clustergroup-chart/). The clustergroup values file (`values-<clusterGroupName>.yaml`) is the central definition of what a Pattern deploys — which namespaces to create, which operators to install, and which applications (helm charts) to run.
 
 Here is the `values-prod.yaml` generated by `pattern init --with-secrets` for our example Pattern. It defines a single clustergroup named `prod` with the namespaces, operator subscriptions, and applications needed for the secrets framework alongside the user's own chart:
 
@@ -315,7 +315,7 @@ clusterGroup:
 
 These three sections — `namespaces`, `subscriptions`, and `applications` — are the core building blocks of every clustergroup. Each is detailed below.
 
-## Namespaces
+### Namespaces
 
 The namespace section accepts simple strings or more complex mappings:
 
@@ -356,7 +356,7 @@ clusterGroup:
 
 The map form is recommended over the list form. When merging values files, lists are overridden entirely whereas maps are merged.
 
-## Subscriptions
+### Subscriptions
 
 Subscriptions define operators that should be installed on the cluster.
 
@@ -395,11 +395,11 @@ The `name` must be the operator's name in the `source` catalog. The default sour
 
 Set `installPlanApproval` to `Manual` to prevent the operator from upgrading automatically when new updates are available in its channel. The default is `Automatic`.
 
-## Applications
+### Applications
 
-### Local Helm Charts
+#### Local Helm Charts
 
-If `path` is provided (and `repoURL` and `chartVersion` are not), the helm chart is sourced from the Pattern repo:
+If `path` is provided (and `repoURL` and `chartVersion` are not), the helm chart is sourced from the Pattern repository:
 
 ```yaml
 clusterGroup:
@@ -410,7 +410,7 @@ clusterGroup:
       path: charts/user-defined-chart
 ```
 
-### VP-Published Helm Charts
+#### VP-Published Helm Charts
 
 If neither `repoURL` nor `path` are provided, charts are sourced from the [Validated Patterns chart repository](https://charts.validatedpatterns.io/). Specify a version with `chartVersion`:
 
@@ -424,9 +424,9 @@ clusterGroup:
       chartVersion: 0.1.*
 ```
 
-### Helm Charts from External Git Repositories
+#### Helm Charts from External Git Repositories
 
-Helm charts from external git repos can be referenced with `repoURL` (the publicly reachable git URL), `path` (the path within the repo), and `chartVersion` (the git revision to use):
+Helm charts from external Git repositories can be referenced with `repoURL` (the publicly reachable Git URL), `path` (the path within the repository), and `chartVersion` (the Git revision to use):
 
 ```yaml
 clusterGroup:
@@ -438,11 +438,11 @@ clusterGroup:
       path: charts/maas-code-assistant
 ```
 
-### Additional Application Fields
+#### Additional Application Fields
 
 Several additional fields are available for any application type:
 
-`extraValueFiles` — Paths (relative to the Pattern repo root) to additional values files passed to the helm chart:
+`extraValueFiles` — Paths (relative to the Pattern repository root) to additional values files passed to the helm chart:
 
 ```yaml
 extraValueFiles:
@@ -491,17 +491,17 @@ clusterGroup:
             - /data/session_secret
 ```
 
-# Using Helm Charts in VP
+## Using Helm Charts in VP
 
 This section covers what the VP framework provides to your charts, not helm chart authoring in general.
 
-## Where Charts Live
+### Where Charts Live
 
-The default location is `charts/` in the Pattern repo. `patternizer init` auto-discovers charts anywhere in the repo, so you can organize them however you like.
+The default location is `charts/` in the Pattern repository. `patternizer init` auto-discovers charts anywhere in the repository, so you can organize them however you like.
 
-Charts can also live in separate git repositories and be referenced via `repoURL` in the application definition. VP-published charts are available from [charts.validatedpatterns.io](https://charts.validatedpatterns.io/) (referenced with `chart:` and `chartVersion:`).
+Charts can also live in separate Git repositories and be referenced via `repoURL` in the application definition. VP-published charts are available from [charts.validatedpatterns.io](https://charts.validatedpatterns.io/) (referenced with `chart:` and `chartVersion:`).
 
-## How Values Flow into Charts
+### How Values Flow into Charts
 
 Every ArgoCD Application created by the clustergroup chart receives the full merged tree of values files described in [Values File Hierarchy](#values-file-hierarchy). This means every chart sees:
 
@@ -512,7 +512,7 @@ Every ArgoCD Application created by the clustergroup chart receives the full mer
 In addition to the values files, the clustergroup chart injects helm parameters for cluster-specific values that are known at deploy time:
 
 - `global.repoURL` — Pattern repository URL
-- `global.targetRevision` — git branch/commit/ref
+- `global.targetRevision` — Git branch/commit/ref
 - `global.namespace` — the ArgoCD app namespace
 - `global.pattern` — Pattern name
 - `global.clusterDomain` — cluster FQDN
@@ -526,7 +526,7 @@ These are available in templates as `.Values.global.<fieldName>`.
 
 A chart's `values.yaml` should include default stubs for any `global.*` or `clusterGroup.*` values referenced in its templates. These defaults enable standalone `helm template` to work during development and are overridden at deploy time by the merged values tree.
 
-## Example: config-demo Chart
+### Example: config-demo Chart
 
 The [config-demo chart](https://github.com/validatedpatterns/multicloud-gitops/tree/main/charts/all/config-demo) from multicloud-gitops is a minimal working example. Its `values.yaml`:
 
@@ -574,13 +574,13 @@ data:
     </h1>
 ```
 
-# The Secrets Framework
+## The Secrets Framework
 
 Secrets in the VP framework are stored in Vault and consumed in charts via External Secrets Operator (ESO). The workflow is: define secrets in `values-secret.yaml.template`, load them into Vault with `./pattern.sh make install` or `./pattern.sh make load-secrets`, and consume them in charts using ExternalSecret CRDs.
 
-## Defining Secrets
+### Defining Secrets
 
-The `values-secret.yaml.template` file defines the secrets a Pattern needs. The install/load-secrets command looks for secrets in `~/values-secret-<pattern-name>.yaml` and falls back to the template in the Pattern repo. This encourages users to copy the template to their home directory and keep secrets out of the git repo.
+The `values-secret.yaml.template` file defines the secrets a Pattern needs. The install/load-secrets command looks for secrets in `~/values-secret-<pattern-name>.yaml` and falls back to the template in the Pattern repository. This encourages users to copy the template to their home directory and keep secrets out of the Git repository.
 
 Example from [multicloud-gitops](https://github.com/validatedpatterns/multicloud-gitops/blob/main/values-secret.yaml.template):
 
@@ -597,7 +597,7 @@ secrets:
       vaultPolicy: validatedPatternDefaultPolicy
 ```
 
-### Secret Field Reference
+#### Secret Field Reference
 
 Each secret entry supports these fields:
 
@@ -642,7 +642,7 @@ secrets:
       path: ~/.pullsecret.json
 ```
 
-## Vault Prefixes and Access Control
+### Vault Prefixes and Access Control
 
 The `vaultPrefixes` field controls which clustergroups can access a secret. The Vault path convention is `secret/data/<prefix>/<secret-name>`.
 
@@ -650,7 +650,7 @@ The `vaultPrefixes` field controls which clustergroups can access a secret. The 
 - A clustergroup name (e.g., `hub`) — readable only by that clustergroup
 - Multiple prefixes write the secret to multiple paths, making it accessible from multiple clustergroups
 
-## Secret Generation and Policies
+### Secret Generation and Policies
 
 Secrets can be auto-generated if no value is provided by setting `onMissingValue: generate`. The generation is controlled by a vault policy:
 
@@ -680,7 +680,7 @@ secrets:
       value: "5432"
 ```
 
-## Consuming Secrets in Charts
+### Consuming Secrets in Charts
 
 Secrets stored in Vault are consumed in charts using ESO ExternalSecret CRDs. The VP `openshift-external-secrets` chart sets up a `ClusterSecretStore` named `vault-backend` that points to the Vault instance.
 
@@ -722,7 +722,7 @@ spec:
         property: secret
 ```
 
-### How the Mapping Works
+#### How the Mapping Works
 
 Given a secret defined in `values-secret.yaml.template` as:
 
@@ -738,21 +738,22 @@ secrets:
 The Vault path is: `secret/data/global/config-demo` (constructed as `secret/data/<vaultPrefix>/<secret-name>`).
 
 In the ExternalSecret:
+
 - `remoteRef.key` is set to this Vault path (`secret/data/global/config-demo`)
 - `remoteRef.property` is the field name (`secret`)
 - `data[].secretKey` (`configdemo_secret`) is the local key used to reference the fetched value in the `target.template`
 
-### Backtick Escaping for ESO Templates
+#### Backtick Escaping for ESO Templates
 
 The `target.template.data` section uses ESO's own template syntax (`{{ .fieldname }}`) to map fetched values into the Kubernetes Secret. Since the ExternalSecret is itself rendered by Helm, the ESO template expressions must be escaped to prevent Helm from interpreting them. The pattern is:
 
-```
+```text
 "{{ `{{ .configdemo_secret }}` }}"
 ```
 
 The backticks create a Go raw string literal that Helm passes through unchanged. ESO then processes `{{ .configdemo_secret }}` at runtime.
 
-## Hub vs. Spoke Secret Infrastructure
+### Hub vs. Spoke Secret Infrastructure
 
 The Vault/ESO components should only be defined on the hub/main cluster:
 
@@ -810,7 +811,7 @@ The VP `openshift-external-secrets` chart automatically configures spoke cluster
 
 For more information, see [Secrets management in the Validated Patterns framework](https://validatedpatterns.io/learn/secrets-management-in-the-validated-patterns-framework/).
 
-# Spoke Clusters
+## Spoke Clusters
 
 Hub/spoke cluster support uses ACM (Advanced Cluster Management). Include the ACM components in your hub clustergroup:
 
@@ -884,7 +885,7 @@ Any cluster imported into ACM with the label `clusterGroup: group-one` will have
 
 In short, spoke and hub clusters are both just clustergroups. The difference is that the hub cluster includes ACM and the Vault components. While the Patterns Operator installs the Pattern via the clustergroup chart in ArgoCD on the hub cluster, the ACM chart pushes policies to spoke clusters for installing OpenShift GitOps (ArgoCD) and the clustergroup chart for that spoke cluster.
 
-# The Imperative Framework
+## The Imperative Framework
 
 Sometimes tasks don't fit neatly into a declarative framework. The imperative framework runs Ansible playbooks on a schedule against the cluster.
 
@@ -913,7 +914,7 @@ clusterGroup:
         timeout: 120
 ```
 
-Imperative jobs typically reference playbooks stored in the `ansible/` directory of the Pattern repo, or playbooks from the `rhvp.cluster_utils` ansible collection. Jobs are defined as a list since they run in order — if one fails, the imperative job fails and remaining jobs are aborted. Jobs must be idempotent since they run on a schedule (every 10 minutes by default).
+Imperative jobs typically reference playbooks stored in the `ansible/` directory of the Pattern repository, or playbooks from the `rhvp.cluster_utils` Ansible collection. Jobs are defined as a list since they run in order — if one fails, the imperative job fails and remaining jobs are aborted. Jobs must be idempotent since they run on a schedule (every 10 minutes by default).
 
 The full set of imperative framework defaults:
 
