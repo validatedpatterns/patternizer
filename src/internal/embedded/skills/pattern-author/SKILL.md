@@ -53,6 +53,7 @@ These rules must always be followed:
   ```text
   "{{ `{{ .field_name }}` }}"
   ```
+
 - **Idempotent imperative jobs** — All imperative jobs run on a schedule (every 10 minutes by default) and must be idempotent.
 - **Re-run `pattern init`** — After adding new local helm charts, re-run `pattern init` to wire them into the clustergroup values file. It is idempotent.
 
