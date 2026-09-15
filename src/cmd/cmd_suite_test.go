@@ -137,6 +137,15 @@ func runCLI(dir string, args ...string) *gexec.Session {
 	return session
 }
 
+func verifyPatternMetadataCreated(dir, patternName string) {
+	metadataPath := filepath.Join(dir, "pattern-metadata.yaml")
+	Expect(metadataPath).To(BeAnExistingFile(), "pattern-metadata.yaml should exist")
+
+	content, err := os.ReadFile(metadataPath)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(string(content)).To(ContainSubstring("name: " + patternName))
+}
+
 func verifySkillsInstalled(dir string) {
 	for _, target := range []string{".claude", ".cursor"} {
 		skillDir := filepath.Join(dir, target, "skills", "pattern-author")
