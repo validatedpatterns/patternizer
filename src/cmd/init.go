@@ -57,6 +57,10 @@ func runInit(withSecrets bool) error {
 		}
 	}
 
+	if err := pattern.GeneratePatternMetadata(actualPatternName, repoRoot); err != nil {
+		return fmt.Errorf("error generating pattern metadata: %w", err)
+	}
+
 	if err := fileutils.InstallSkills(repoRoot); err != nil {
 		return fmt.Errorf("error installing skills: %w", err)
 	}
