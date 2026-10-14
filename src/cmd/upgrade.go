@@ -70,6 +70,16 @@ func runUpgrade(replaceMakefile bool) error {
 		return fmt.Errorf("error installing skills: %w", err)
 	}
 
+	deprecated, err := pattern.UsesDeprecatedClusterGroupName(repoRoot)
+	if err != nil {
+		return fmt.Errorf("error checking for deprecated fields: %w", err)
+	}
+	if deprecated {
+		fmt.Println("Warning: values-global.yaml uses the deprecated 'main.clusterGroupName' field.")
+		fmt.Println("The Validated Patterns operator deprecated 'main.clusterGroupName' in favor of 'main.variant' in version 0.0.79.")
+		fmt.Println("Please update values-global.yaml to use 'main.variant'.")
+	}
+
 	fmt.Printf("Successfully upgraded pattern repository in %s\n", repoRoot)
 	return nil
 }

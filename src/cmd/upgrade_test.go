@@ -115,6 +115,51 @@ var _ = Describe("patternizer update (upgrade alias)", func() {
 	})
 })
 
+var _ = Describe("patternizer upgrade deprecation warning", func() {
+	const legacyGlobal = "global:\n  pattern: test-pattern\nmain:\n  clusterGroupName: hub\n"
+	const variantGlobal = "global:\n  pattern: test-pattern\nmain:\n  variant: hub\n"
+
+	Context("when values-global.yaml uses the deprecated main.clusterGroupName", func() {
+		var tempDir string
+		var session *gexec.Session
+
+		BeforeEach(func() {
+			tempDir = createTestDir()
+			Expect(os.WriteFile(filepath.Join(tempDir, "values-global.yaml"), []byte(legacyGlobal), 0o644)).To(Succeed())
+			session = runCLI(tempDir, "upgrade")
+		})
+
+		It("should print a deprecation warning mentioning main.variant", func() {
+			out := string(session.Out.Contents())
+			Expect(out).To(ContainSubstring("main.clusterGroupName"))
+			Expect(out).To(ContainSubstring("main.variant"))
+			Expect(out).To(ContainSubstring("0.0.79"))
+		})
+
+		It("should leave values-global.yaml unchanged", func() {
+			f, err := os.ReadFile(filepath.Join(tempDir, "values-global.yaml"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(f)).To(Equal(legacyGlobal))
+		})
+	})
+
+	Context("when values-global.yaml already uses main.variant", func() {
+		var tempDir string
+		var session *gexec.Session
+
+		BeforeEach(func() {
+			tempDir = createTestDir()
+			Expect(os.WriteFile(filepath.Join(tempDir, "values-global.yaml"), []byte(variantGlobal), 0o644)).To(Succeed())
+			session = runCLI(tempDir, "upgrade")
+		})
+
+		It("should not print a deprecation warning", func() {
+			out := string(session.Out.Contents())
+			Expect(out).NotTo(ContainSubstring("deprecated"))
+		})
+	})
+})
+
 var _ = Describe("patternizer upgrade --replace-makefile", func() {
 	Context("on a repo using common", Ordered, func() {
 		var tempDir string

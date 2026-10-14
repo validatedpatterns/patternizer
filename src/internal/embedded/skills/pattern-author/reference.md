@@ -79,7 +79,7 @@ global:
   secretLoader:
     disabled: false
 main:
-  clusterGroupName: prod
+  variant: prod
   multiSourceConfig:
     enabled: true
     clusterGroupChartVersion: 0.9.*
@@ -93,7 +93,7 @@ main:
 
 `global.secretLoader.disabled` — When `true`, skip loading secrets. Useful for Patterns that don't use the secrets framework.
 
-`main.clusterGroupName` — The name of the primary clustergroup. Determines which `values-<name>.yaml` file defines the main cluster. If you change this value, the next `pattern init` run creates the corresponding values file (you would need to manually delete the old unused one).
+`main.variant` — The name of the primary clustergroup. Determines which `values-<name>.yaml` file defines the main cluster. If you change this value, the next `pattern init` run creates the corresponding values file (you would need to manually delete the old unused one). This replaces the deprecated `main.clusterGroupName` field (deprecated by the Validated Patterns operator in version 0.0.79); patternizer automatically migrates `main.clusterGroupName` to `main.variant` on `init`.
 
 `main.multiSourceConfig.enabled` — Enable ArgoCD multi-source applications. Should always be `true` for modern Patterns.
 
@@ -184,7 +184,7 @@ global:
   pattern: ai-quickstart-rag
   device: cpu # one of 'cpu' (no GPU) or 'gpu' (NVIDIA GPU)
 main:
-  clusterGroupName: prod
+  variant: prod
   multiSourceConfig:
     enabled: true
     clusterGroupChartVersion: 0.9.*

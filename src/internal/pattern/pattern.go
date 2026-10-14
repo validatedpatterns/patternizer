@@ -23,9 +23,14 @@ func GetPatternNameAndRepoRoot() (patternName, repoRoot string, err error) {
 	return patternName, repoRoot, nil
 }
 
+// deprecatedClusterGroupNameField is the legacy key under 'main' that has been
+// replaced by 'main.variant'.
+const deprecatedClusterGroupNameField = "clusterGroupName"
+
 // ProcessGlobalValues processes the global values YAML file.
-// It returns the pattern name and cluster group name that should be used (from the file if they exist, or the detected/default names).
-func ProcessGlobalValues(patternName, repoRoot string, withSecrets bool) (actualPatternName, clusterGroupName string, err error) {
+// It returns the pattern name and variant that should be used (from the file if they exist, or the detected/default names).
+// If the existing file uses the deprecated 'main.clusterGroupName' field, it is automatically migrated to 'main.variant'.
+func ProcessGlobalValues(patternName, repoRoot string, withSecrets bool) (actualPatternName, variant string, err error) {
 	globalValuesPath := filepath.Join(repoRoot, "values-global.yaml")
 	values := types.NewDefaultValuesGlobal()
 
@@ -34,11 +39,17 @@ func ProcessGlobalValues(patternName, repoRoot string, withSecrets bool) (actual
 		return "", "", fmt.Errorf("failed to read %s: %w", globalValuesPath, err)
 	}
 
+	var fileValues types.ValuesGlobal
 	if err == nil {
 		if err = yaml.Unmarshal(yamlFile, values); err != nil {
 			return "", "", fmt.Errorf("failed to unmarshal YAML from %s: %w", globalValuesPath, err)
 		}
+		if err = yaml.Unmarshal(yamlFile, &fileValues); err != nil {
+			return "", "", fmt.Errorf("failed to unmarshal YAML from %s: %w", globalValuesPath, err)
+		}
 	}
+
+	migrateDeprecatedVariant(values, fileValues.Main.Variant != "")
 
 	if values.Global.Pattern == "" {
 		values.Global.Pattern = patternName
@@ -53,7 +64,55 @@ func ProcessGlobalValues(patternName, repoRoot string, withSecrets bool) (actual
 		return "", "", fmt.Errorf("failed to write to %s: %w", globalValuesPath, err)
 	}
 
-	return values.Global.Pattern, values.Main.ClusterGroupName, nil
+	return values.Global.Pattern, values.Main.Variant, nil
+}
+
+// migrateDeprecatedVariant migrates a legacy 'main.clusterGroupName' field to
+// 'main.variant'. An explicit 'main.variant' value (variantExplicit) always wins;
+// otherwise the deprecated value is adopted so the existing values-<variant>.yaml
+// keeps being used. The deprecated key is always removed so it is not written back.
+func migrateDeprecatedVariant(values *types.ValuesGlobal, variantExplicit bool) {
+	if values.Main.OtherFields == nil {
+		return
+	}
+
+	legacy, ok := values.Main.OtherFields[deprecatedClusterGroupNameField]
+	if !ok {
+		return
+	}
+
+	delete(values.Main.OtherFields, deprecatedClusterGroupNameField)
+
+	if !variantExplicit {
+		if legacyName, ok := legacy.(string); ok {
+			values.Main.Variant = legacyName
+		}
+	}
+
+	fmt.Printf("Migrated deprecated 'main.clusterGroupName' to 'main.variant' (%s) in values-global.yaml.\n", values.Main.Variant)
+}
+
+// UsesDeprecatedClusterGroupName reports whether the pattern's values-global.yaml
+// still uses the deprecated 'main.clusterGroupName' field. It returns false without
+// error when the file does not exist.
+func UsesDeprecatedClusterGroupName(repoRoot string) (bool, error) {
+	globalValuesPath := filepath.Join(repoRoot, "values-global.yaml")
+
+	yamlFile, err := os.ReadFile(globalValuesPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("failed to read %s: %w", globalValuesPath, err)
+	}
+
+	var values types.ValuesGlobal
+	if err = yaml.Unmarshal(yamlFile, &values); err != nil {
+		return false, fmt.Errorf("failed to unmarshal YAML from %s: %w", globalValuesPath, err)
+	}
+
+	_, ok := values.Main.OtherFields[deprecatedClusterGroupNameField]
+	return ok, nil
 }
 
 // ProcessClusterGroupValues processes the cluster group values YAML file.

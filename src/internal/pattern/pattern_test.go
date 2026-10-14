@@ -87,7 +87,7 @@ var _ = Describe("ProcessGlobalValues", func() {
 				{[]string{"global", "customField"}, "customValue"},
 				{[]string{"global", "nestedCustom", "key1"}, "value1"},
 				{[]string{"global", "nestedCustom", "key2"}, 42},
-				{[]string{"main", "clusterGroupName"}, "custom-cluster-group"},
+				{[]string{"main", "variant"}, "custom-cluster-group"},
 				{[]string{"main", "multiSourceConfig", "enabled"}, false},
 				{[]string{"main", "multiSourceConfig", "clusterGroupChartVersion"}, "1.0.*"},
 				{[]string{"main", "multiSourceConfig", "customMultiSource"}, "customValue"},
@@ -99,6 +99,9 @@ var _ = Describe("ProcessGlobalValues", func() {
 				Expect(getNestedValue(processedValues, tt.path)).To(Equal(tt.expected),
 					"Field %v should be %v", tt.path, tt.expected)
 			}
+
+			// The deprecated clusterGroupName field should be migrated away.
+			Expect(getNestedValue(processedValues, []string{"main", "clusterGroupName"})).To(BeNil())
 
 			// Verify array field is preserved
 			customTopLevel, ok := processedValues["customTopLevel"].(map[string]interface{})
@@ -132,7 +135,7 @@ var _ = Describe("ProcessGlobalValues", func() {
 			Expect(yaml.Unmarshal(data, &values)).To(Succeed())
 
 			Expect(values.Global.Pattern).To(Equal("test-pattern"))
-			Expect(values.Main.ClusterGroupName).To(Equal("prod"))
+			Expect(values.Main.Variant).To(Equal("prod"))
 			Expect(values.Main.MultiSourceConfig.Enabled).To(BeTrue())
 			Expect(values.Main.MultiSourceConfig.ClusterGroupChartVersion).To(Equal("0.9.*"))
 			Expect(values.Global.SecretLoader.Disabled).To(BeTrue())
@@ -296,5 +299,89 @@ var _ = Describe("ProcessClusterGroupValues", func() {
 			Expect(applications).To(HaveKey("app2"))
 			Expect(applications).To(HaveKey("custom-app"))
 		})
+	})
+})
+
+var _ = Describe("ProcessGlobalValues variant migration", func() {
+	var tempDir string
+
+	BeforeEach(func() {
+		tempDir = GinkgoT().TempDir()
+	})
+
+	writeGlobalValues := func(content string) string {
+		valuesPath := filepath.Join(tempDir, "values-global.yaml")
+		Expect(os.WriteFile(valuesPath, []byte(content), 0o644)).To(Succeed())
+		return valuesPath
+	}
+
+	readMain := func(valuesPath string) map[string]interface{} {
+		data, err := os.ReadFile(valuesPath)
+		Expect(err).NotTo(HaveOccurred())
+		var values map[string]interface{}
+		Expect(yaml.Unmarshal(data, &values)).To(Succeed())
+		main, ok := values["main"].(map[string]interface{})
+		Expect(ok).To(BeTrue())
+		return main
+	}
+
+	Context("when only the deprecated clusterGroupName is set", func() {
+		It("adopts its value as the variant and removes the deprecated field", func() {
+			valuesPath := writeGlobalValues("global:\n  pattern: existing\nmain:\n  clusterGroupName: hub\n")
+
+			_, variant, err := ProcessGlobalValues("existing", tempDir, false)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(variant).To(Equal("hub"))
+
+			main := readMain(valuesPath)
+			Expect(main["variant"]).To(Equal("hub"))
+			Expect(main).NotTo(HaveKey("clusterGroupName"))
+		})
+	})
+
+	Context("when both variant and the deprecated clusterGroupName are set", func() {
+		It("keeps variant and removes the deprecated field", func() {
+			valuesPath := writeGlobalValues("global:\n  pattern: existing\nmain:\n  variant: real\n  clusterGroupName: legacy\n")
+
+			_, variant, err := ProcessGlobalValues("existing", tempDir, false)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(variant).To(Equal("real"))
+
+			main := readMain(valuesPath)
+			Expect(main["variant"]).To(Equal("real"))
+			Expect(main).NotTo(HaveKey("clusterGroupName"))
+		})
+	})
+})
+
+var _ = Describe("UsesDeprecatedClusterGroupName", func() {
+	var tempDir string
+
+	BeforeEach(func() {
+		tempDir = GinkgoT().TempDir()
+	})
+
+	It("returns false when values-global.yaml does not exist", func() {
+		used, err := UsesDeprecatedClusterGroupName(tempDir)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(used).To(BeFalse())
+	})
+
+	It("returns true when main.clusterGroupName is present", func() {
+		Expect(os.WriteFile(filepath.Join(tempDir, "values-global.yaml"),
+			[]byte("main:\n  clusterGroupName: hub\n"), 0o644)).To(Succeed())
+
+		used, err := UsesDeprecatedClusterGroupName(tempDir)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(used).To(BeTrue())
+	})
+
+	It("returns false when main.variant is used", func() {
+		Expect(os.WriteFile(filepath.Join(tempDir, "values-global.yaml"),
+			[]byte("main:\n  variant: hub\n"), 0o644)).To(Succeed())
+
+		used, err := UsesDeprecatedClusterGroupName(tempDir)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(used).To(BeFalse())
 	})
 })

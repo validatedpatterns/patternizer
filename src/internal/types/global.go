@@ -16,7 +16,7 @@ type Global struct {
 
 // Main represents the 'main' section of the YAML file.
 type Main struct {
-	ClusterGroupName  string                 `yaml:"clusterGroupName"`
+	Variant           string                 `yaml:"variant"`
 	MultiSourceConfig MultiSourceConfig      `yaml:"multiSourceConfig"`
 	OtherFields       map[string]interface{} `yaml:",inline"`
 }
@@ -45,7 +45,7 @@ func NewDefaultValuesGlobal() *ValuesGlobal {
 			},
 		},
 		Main: Main{
-			ClusterGroupName: "prod",
+			Variant: "prod",
 			MultiSourceConfig: MultiSourceConfig{
 				Enabled:                  true,
 				ClusterGroupChartVersion: "0.9.*",

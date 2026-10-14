@@ -80,7 +80,7 @@ var _ = Describe("patternizer init", func() {
 					},
 				},
 				Main: types.Main{
-					ClusterGroupName: "prod",
+					Variant: "prod",
 					MultiSourceConfig: types.MultiSourceConfig{
 						Enabled:                  true,
 						ClusterGroupChartVersion: "0.9.*",
@@ -129,7 +129,7 @@ var _ = Describe("patternizer init", func() {
 					},
 				},
 				Main: types.Main{
-					ClusterGroupName: "prod",
+					Variant: "prod",
 					MultiSourceConfig: types.MultiSourceConfig{
 						Enabled:                  true,
 						ClusterGroupChartVersion: "0.9.*",
@@ -189,7 +189,7 @@ var _ = Describe("patternizer init", func() {
 					},
 				},
 				Main: types.Main{
-					ClusterGroupName: "test",
+					Variant: "test",
 					MultiSourceConfig: types.MultiSourceConfig{
 						Enabled:                  true,
 						ClusterGroupChartVersion: "0.9.*",
@@ -238,7 +238,7 @@ var _ = Describe("patternizer init", func() {
 					},
 				},
 				Main: types.Main{
-					ClusterGroupName: "test",
+					Variant: "test",
 					MultiSourceConfig: types.MultiSourceConfig{
 						Enabled:                  true,
 						ClusterGroupChartVersion: "0.9.*",
@@ -308,7 +308,7 @@ var _ = Describe("patternizer init", func() {
 					},
 				},
 				Main: types.Main{
-					ClusterGroupName: "test",
+					Variant: "test",
 					MultiSourceConfig: types.MultiSourceConfig{
 						Enabled:                  true,
 						ClusterGroupChartVersion: "0.9.*",
@@ -348,7 +348,7 @@ var _ = Describe("patternizer init --with-secrets", func() {
 					},
 				},
 				Main: types.Main{
-					ClusterGroupName: "prod",
+					Variant: "prod",
 					MultiSourceConfig: types.MultiSourceConfig{
 						Enabled:                  true,
 						ClusterGroupChartVersion: "0.9.*",
@@ -428,7 +428,7 @@ var _ = Describe("patternizer init --with-secrets", func() {
 					},
 				},
 				Main: types.Main{
-					ClusterGroupName: "prod",
+					Variant: "prod",
 					MultiSourceConfig: types.MultiSourceConfig{
 						Enabled:                  true,
 						ClusterGroupChartVersion: "0.9.*",
@@ -518,7 +518,7 @@ var _ = Describe("patternizer init --with-secrets", func() {
 					},
 				},
 				Main: types.Main{
-					ClusterGroupName: "test",
+					Variant: "test",
 					MultiSourceConfig: types.MultiSourceConfig{
 						Enabled:                  true,
 						ClusterGroupChartVersion: "0.9.*",
@@ -595,7 +595,7 @@ var _ = Describe("patternizer init --with-secrets", func() {
 					},
 				},
 				Main: types.Main{
-					ClusterGroupName: "prod",
+					Variant: "prod",
 					MultiSourceConfig: types.MultiSourceConfig{
 						Enabled:                  true,
 						ClusterGroupChartVersion: "0.9.*",
@@ -686,7 +686,7 @@ var _ = Describe("patternizer init --with-secrets", func() {
 					},
 				},
 				Main: types.Main{
-					ClusterGroupName: "test",
+					Variant: "test",
 					MultiSourceConfig: types.MultiSourceConfig{
 						Enabled:                  true,
 						ClusterGroupChartVersion: "0.9.*",
