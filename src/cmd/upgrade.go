@@ -70,26 +70,58 @@ func runUpgrade(replaceMakefile bool) error {
 		return fmt.Errorf("error installing skills: %w", err)
 	}
 
+	warnings, err := collectUpgradeWarnings(repoRoot)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Successfully upgraded pattern repository in %s\n", repoRoot)
+
+	emitUpgradeWarnings(warnings)
+	return nil
+}
+
+// collectUpgradeWarnings inspects the pattern's values-global.yaml and returns a list of
+// compact deprecation warnings that should be surfaced to the user as a call to action.
+func collectUpgradeWarnings(repoRoot string) ([]string, error) {
+	var warnings []string
+
 	deprecated, err := pattern.UsesDeprecatedClusterGroupName(repoRoot)
 	if err != nil {
-		return fmt.Errorf("error checking for deprecated fields: %w", err)
+		return nil, fmt.Errorf("error checking for deprecated fields: %w", err)
 	}
 	if deprecated {
-		fmt.Println("Warning: values-global.yaml uses the deprecated 'main.clusterGroupName' field.")
-		fmt.Println("The Validated Patterns operator deprecated 'main.clusterGroupName' in favor of 'main.variant' in version 0.0.78.")
-		fmt.Println("Please update values-global.yaml to use 'main.variant'.")
+		warnings = append(warnings, "WARNING: values-global.yaml uses deprecated 'main.clusterGroupName' (operator 0.0.78). Set 'main.variant' instead.")
 	}
 
 	variant, folderMissing, err := pattern.VariantFolderFileMissing(repoRoot)
 	if err != nil {
-		return fmt.Errorf("error checking for variants folder structure: %w", err)
+		return nil, fmt.Errorf("error checking for variants folder structure: %w", err)
 	}
 	if folderMissing {
-		fmt.Printf("Warning: this pattern does not use the variants folder structure (variants/%s/values-%s.yaml not found).\n", variant, variant)
-		fmt.Println("The Validated Patterns operator introduced the variants folder structure in version 0.0.78.")
-		fmt.Println("See https://validatedpatterns.io/blog/2026-08-04-variants-folder-structure/ for migration guidance.")
+		warnings = append(warnings, fmt.Sprintf("WARNING: not using the variants folder structure (variants/%s/values-%s.yaml not found; operator 0.0.78). See https://validatedpatterns.io/blog/2026-08-04-variants-folder-structure/", variant, variant))
 	}
 
-	fmt.Printf("Successfully upgraded pattern repository in %s\n", repoRoot)
-	return nil
+	missingSingleArgoCD, err := pattern.MissingSingleArgoCD(repoRoot)
+	if err != nil {
+		return nil, fmt.Errorf("error checking for singleArgoCD: %w", err)
+	}
+	if missingSingleArgoCD {
+		warnings = append(warnings, "WARNING: 'global.singleArgoCD' is not set. Set 'global.singleArgoCD: true' if possible. See https://validatedpatterns.io/blog/2026-06-04-single-argocd-option/")
+	}
+
+	return warnings, nil
+}
+
+// emitUpgradeWarnings prints deprecation warnings to stderr as a grouped block, separated
+// from the normal stdout logs so they stand out as a call to action.
+func emitUpgradeWarnings(warnings []string) {
+	if len(warnings) == 0 {
+		return
+	}
+
+	fmt.Fprintln(os.Stderr)
+	for _, warning := range warnings {
+		fmt.Fprintln(os.Stderr, warning)
+	}
 }

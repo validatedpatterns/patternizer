@@ -134,6 +134,9 @@ What upgrade does:
     - Otherwise: prepends `include Makefile-common` to the first line so your existing targets are preserved
 - Prints a deprecation warning if `values-global.yaml` still uses `main.clusterGroupName`, which the Validated Patterns operator deprecated in favor of `main.variant` in version 0.0.78 (`upgrade` does not modify the file; run `patternizer init` to migrate automatically)
 - Prints a deprecation warning if the pattern does not use the [variants folder structure](https://validatedpatterns.io/blog/2026-08-04-variants-folder-structure/) (introduced in operator version 0.0.78) — that is, if `variants/<variant>/values-<variant>.yaml` is missing for the configured variant (`upgrade` does not move any files; run `patternizer init` to migrate automatically)
+- Prints a warning if `global.singleArgoCD` is not set in `values-global.yaml`, recommending you set `global.singleArgoCD: true` if possible (see the [single ArgoCD instance](https://validatedpatterns.io/blog/2026-06-04-single-argocd-option/) blog post)
+
+These warnings are written to stderr, grouped after the success message, so they stand out as a call to action.
 
 ### Understanding Secrets Management
 

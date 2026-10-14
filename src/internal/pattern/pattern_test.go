@@ -457,3 +457,53 @@ var _ = Describe("VariantFolderFileMissing", func() {
 		Expect(missing).To(BeTrue())
 	})
 })
+
+var _ = Describe("MissingSingleArgoCD", func() {
+	var tempDir string
+
+	BeforeEach(func() {
+		tempDir = GinkgoT().TempDir()
+	})
+
+	writeGlobal := func(content string) {
+		Expect(os.WriteFile(filepath.Join(tempDir, "values-global.yaml"), []byte(content), 0o644)).To(Succeed())
+	}
+
+	It("returns false when values-global.yaml does not exist", func() {
+		missing, err := MissingSingleArgoCD(tempDir)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(missing).To(BeFalse())
+	})
+
+	It("returns false when global.singleArgoCD is set to true", func() {
+		writeGlobal("global:\n  pattern: test\n  singleArgoCD: true\n")
+
+		missing, err := MissingSingleArgoCD(tempDir)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(missing).To(BeFalse())
+	})
+
+	It("returns false when global.singleArgoCD is set to false", func() {
+		writeGlobal("global:\n  pattern: test\n  singleArgoCD: false\n")
+
+		missing, err := MissingSingleArgoCD(tempDir)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(missing).To(BeFalse())
+	})
+
+	It("returns true when global exists without singleArgoCD", func() {
+		writeGlobal("global:\n  pattern: test\n")
+
+		missing, err := MissingSingleArgoCD(tempDir)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(missing).To(BeTrue())
+	})
+
+	It("returns true when there is no global section", func() {
+		writeGlobal("main:\n  variant: hub\n")
+
+		missing, err := MissingSingleArgoCD(tempDir)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(missing).To(BeTrue())
+	})
+})

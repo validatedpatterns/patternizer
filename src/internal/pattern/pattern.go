@@ -126,6 +126,34 @@ func variantFolderValuesPath(repoRoot, variant string) string {
 	return filepath.Join(repoRoot, "variants", variant, variantValuesFileName(variant))
 }
 
+// MissingSingleArgoCD reports whether the pattern's values-global.yaml is missing the
+// 'global.singleArgoCD' field. It returns false without error when the file does not
+// exist (nothing to warn about).
+func MissingSingleArgoCD(repoRoot string) (bool, error) {
+	globalValuesPath := filepath.Join(repoRoot, "values-global.yaml")
+
+	yamlFile, err := os.ReadFile(globalValuesPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("failed to read %s: %w", globalValuesPath, err)
+	}
+
+	var raw map[string]interface{}
+	if err = yaml.Unmarshal(yamlFile, &raw); err != nil {
+		return false, fmt.Errorf("failed to unmarshal YAML from %s: %w", globalValuesPath, err)
+	}
+
+	global, ok := raw["global"].(map[string]interface{})
+	if !ok {
+		return true, nil
+	}
+
+	_, ok = global["singleArgoCD"]
+	return !ok, nil
+}
+
 // ProcessClusterGroupValues processes the cluster group values YAML file.
 // The file is written to the variants folder structure at
 // variants/<variant>/values-<variant>.yaml. If a legacy flat-layout file exists at the
