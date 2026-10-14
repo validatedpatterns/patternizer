@@ -132,7 +132,8 @@ What upgrade does:
     - If no `Makefile` exists: copies the default `Makefile`
     - If a `Makefile` exists and already contains `include Makefile-common` anywhere: leaves it unchanged
     - Otherwise: prepends `include Makefile-common` to the first line so your existing targets are preserved
-- Prints a deprecation warning if `values-global.yaml` still uses `main.clusterGroupName`, which the Validated Patterns operator deprecated in favor of `main.variant` in version 0.0.79 (`upgrade` does not modify the file; run `patternizer init` to migrate automatically)
+- Prints a deprecation warning if `values-global.yaml` still uses `main.clusterGroupName`, which the Validated Patterns operator deprecated in favor of `main.variant` in version 0.0.78 (`upgrade` does not modify the file; run `patternizer init` to migrate automatically)
+- Prints a deprecation warning if the pattern does not use the [variants folder structure](https://validatedpatterns.io/blog/2026-08-04-variants-folder-structure/) (introduced in operator version 0.0.78) — that is, if `variants/<variant>/values-<variant>.yaml` is missing for the configured variant (`upgrade` does not move any files; run `patternizer init` to migrate automatically)
 
 ### Understanding Secrets Management
 
@@ -149,7 +150,7 @@ For more details on how secrets work in the framework, see the [Secrets Manageme
 Running `patternizer init` creates the following:
 
 - `values-global.yaml`: Global pattern configuration.
-- `values-<cluster_group>.yaml`: Cluster group-specific values.
+- `variants/<variant>/values-<variant>.yaml`: Variant-specific (cluster group) values, using the [variants folder structure](https://validatedpatterns.io/blog/2026-08-04-variants-folder-structure/). A legacy root-level `values-<variant>.yaml` is migrated into this folder automatically.
 - `pattern.sh`: A utility script for common pattern operations (`install`, `upgrade`, etc.).
 - `Makefile`: A simple Makefile that includes `Makefile-common`.
 - `Makefile-common`: The core Makefile with all pattern-related targets.

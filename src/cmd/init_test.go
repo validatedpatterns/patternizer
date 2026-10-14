@@ -91,7 +91,7 @@ var _ = Describe("patternizer init", func() {
 		})
 
 		It("should create an appropriate clustergroup values file", func() {
-			clusterGroupValuesFile := filepath.Join(tempDir, "values-prod.yaml")
+			clusterGroupValuesFile := filepath.Join(tempDir, "variants", "prod", "values-prod.yaml")
 			expectedClusterGroupValues := types.ValuesClusterGroup{
 				ClusterGroup: types.ClusterGroup{
 					Name:          "prod",
@@ -140,7 +140,7 @@ var _ = Describe("patternizer init", func() {
 		})
 
 		It("should create an appropriate clustergroup values file", func() {
-			clusterGroupValuesFile := filepath.Join(tempDir, "values-prod.yaml")
+			clusterGroupValuesFile := filepath.Join(tempDir, "variants", "prod", "values-prod.yaml")
 			expectedNamespace := filepath.Base(tempDir)
 			expectedClusterGroupValues := types.ValuesClusterGroup{
 				ClusterGroup: types.ClusterGroup{
@@ -200,7 +200,7 @@ var _ = Describe("patternizer init", func() {
 		})
 
 		It("should create an appropriate clustergroup values file", func() {
-			clusterGroupValuesFile := filepath.Join(tempDir, "values-test.yaml")
+			clusterGroupValuesFile := filepath.Join(tempDir, "variants", "test", "values-test.yaml")
 			expectedClusterGroupValues := types.ValuesClusterGroup{
 				ClusterGroup: types.ClusterGroup{
 					Name:          "test",
@@ -249,7 +249,7 @@ var _ = Describe("patternizer init", func() {
 		})
 
 		It("should create an appropriate clustergroup values file", func() {
-			clusterGroupValuesFile := filepath.Join(tempDir, "values-test.yaml")
+			clusterGroupValuesFile := filepath.Join(tempDir, "variants", "test", "values-test.yaml")
 			expectedClusterGroupValues := types.ValuesClusterGroup{
 				ClusterGroup: types.ClusterGroup{
 					Name:          "test",
@@ -269,6 +269,10 @@ var _ = Describe("patternizer init", func() {
 				OtherFields: map[string]interface{}{"customClusterTopLevel": "user-cluster-top-level"},
 			}
 			verifyClusterGroupValues(clusterGroupValuesFile, &expectedClusterGroupValues)
+		})
+
+		It("should remove the legacy root-level values file after migration", func() {
+			Expect(filepath.Join(tempDir, "values-test.yaml")).NotTo(BeAnExistingFile())
 		})
 	})
 
@@ -359,7 +363,7 @@ var _ = Describe("patternizer init --with-secrets", func() {
 		})
 
 		It("should create an appropriate clustergroup values file", func() {
-			clusterGroupValuesFile := filepath.Join(tempDir, "values-prod.yaml")
+			clusterGroupValuesFile := filepath.Join(tempDir, "variants", "prod", "values-prod.yaml")
 			expectedClusterGroupValues := types.ValuesClusterGroup{
 				ClusterGroup: types.ClusterGroup{
 					Name: "prod",
@@ -439,7 +443,7 @@ var _ = Describe("patternizer init --with-secrets", func() {
 		})
 
 		It("should create an appropriate clustergroup values file", func() {
-			clusterGroupValuesFile := filepath.Join(tempDir, "values-prod.yaml")
+			clusterGroupValuesFile := filepath.Join(tempDir, "variants", "prod", "values-prod.yaml")
 			expectedNamespace := filepath.Base(tempDir)
 			expectedClusterGroupValues := types.ValuesClusterGroup{
 				ClusterGroup: types.ClusterGroup{
@@ -529,7 +533,7 @@ var _ = Describe("patternizer init --with-secrets", func() {
 		})
 
 		It("should create an appropriate clustergroup values file", func() {
-			clusterGroupValuesFile := filepath.Join(tempDir, "values-test.yaml")
+			clusterGroupValuesFile := filepath.Join(tempDir, "variants", "test", "values-test.yaml")
 			expectedClusterGroupValues := types.ValuesClusterGroup{
 				ClusterGroup: types.ClusterGroup{
 					Name: "test",
@@ -606,7 +610,7 @@ var _ = Describe("patternizer init --with-secrets", func() {
 		})
 
 		It("should update the clustergroup values file to include secrets", func() {
-			clusterGroupValuesFile := filepath.Join(tempDir, "values-prod.yaml")
+			clusterGroupValuesFile := filepath.Join(tempDir, "variants", "prod", "values-prod.yaml")
 			expectedNamespace := filepath.Base(tempDir)
 			expectedClusterGroupValues := types.ValuesClusterGroup{
 				ClusterGroup: types.ClusterGroup{
@@ -697,7 +701,7 @@ var _ = Describe("patternizer init --with-secrets", func() {
 		})
 
 		It("should create an appropriate clustergroup values file", func() {
-			clusterGroupValuesFile := filepath.Join(tempDir, "values-test.yaml")
+			clusterGroupValuesFile := filepath.Join(tempDir, "variants", "test", "values-test.yaml")
 			expectedClusterGroupValues := types.ValuesClusterGroup{
 				ClusterGroup: types.ClusterGroup{
 					Name: "test",
@@ -788,7 +792,7 @@ clusterGroup:
 		})
 
 		It("should migrate list-style namespaces to map-style", func() {
-			clusterGroupValuesFile := filepath.Join(tempDir, "values-prod.yaml")
+			clusterGroupValuesFile := filepath.Join(tempDir, "variants", "prod", "values-prod.yaml")
 			expectedClusterGroupValues := types.ValuesClusterGroup{
 				ClusterGroup: types.ClusterGroup{
 					Name: "prod",
@@ -833,7 +837,7 @@ clusterGroup:
 		})
 
 		It("should preserve map-style namespaces", func() {
-			clusterGroupValuesFile := filepath.Join(tempDir, "values-prod.yaml")
+			clusterGroupValuesFile := filepath.Join(tempDir, "variants", "prod", "values-prod.yaml")
 			expectedClusterGroupValues := types.ValuesClusterGroup{
 				ClusterGroup: types.ClusterGroup{
 					Name: "prod",

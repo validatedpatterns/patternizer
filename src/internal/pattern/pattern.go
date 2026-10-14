@@ -115,30 +115,121 @@ func UsesDeprecatedClusterGroupName(repoRoot string) (bool, error) {
 	return ok, nil
 }
 
-// ProcessClusterGroupValues processes the cluster group values YAML file.
-func ProcessClusterGroupValues(patternName, clusterGroupName, repoRoot string, chartPaths []string, useSecrets bool) error {
-	clusterGroupValuesPath := filepath.Join(repoRoot, fmt.Sprintf("values-%s.yaml", clusterGroupName))
-	values := types.NewDefaultValuesClusterGroup(patternName, clusterGroupName, chartPaths, useSecrets)
+// variantValuesFileName returns the values file name for a given variant.
+func variantValuesFileName(variant string) string {
+	return fmt.Sprintf("values-%s.yaml", variant)
+}
 
-	yamlFile, err := os.ReadFile(clusterGroupValuesPath)
+// variantFolderValuesPath returns the path to a variant's values file in the
+// variants folder structure: variants/<variant>/values-<variant>.yaml.
+func variantFolderValuesPath(repoRoot, variant string) string {
+	return filepath.Join(repoRoot, "variants", variant, variantValuesFileName(variant))
+}
+
+// ProcessClusterGroupValues processes the cluster group values YAML file.
+// The file is written to the variants folder structure at
+// variants/<variant>/values-<variant>.yaml. If a legacy flat-layout file exists at the
+// repository root (values-<variant>.yaml), it is migrated into the variants folder and
+// the old file is removed.
+func ProcessClusterGroupValues(patternName, variant, repoRoot string, chartPaths []string, useSecrets bool) error {
+	newPath := variantFolderValuesPath(repoRoot, variant)
+	oldPath := filepath.Join(repoRoot, variantValuesFileName(variant))
+
+	values := types.NewDefaultValuesClusterGroup(patternName, variant, chartPaths, useSecrets)
+
+	oldExists, err := fileExists(oldPath)
+	if err != nil {
+		return err
+	}
+
+	mergeSource := newPath
+	if sourceExists, srcErr := fileExists(newPath); srcErr != nil {
+		return srcErr
+	} else if !sourceExists && oldExists {
+		mergeSource = oldPath
+	}
+
+	yamlFile, err := os.ReadFile(mergeSource)
 	if err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to read %s: %w", clusterGroupValuesPath, err)
+		return fmt.Errorf("failed to read %s: %w", mergeSource, err)
 	}
 
 	if err == nil {
 		var existingValues types.ValuesClusterGroup
 		if err = yaml.Unmarshal(yamlFile, &existingValues); err != nil {
-			return fmt.Errorf("failed to unmarshal YAML from %s: %w", clusterGroupValuesPath, err)
+			return fmt.Errorf("failed to unmarshal YAML from %s: %w", mergeSource, err)
 		}
 
 		mergeClusterGroupValues(values, &existingValues)
 	}
 
-	if err = fileutils.WriteYAMLWithIndent(values, clusterGroupValuesPath); err != nil {
-		return fmt.Errorf("failed to write to %s: %w", clusterGroupValuesPath, err)
+	if err = os.MkdirAll(filepath.Dir(newPath), 0o755); err != nil {
+		return fmt.Errorf("failed to create directory for %s: %w", newPath, err)
+	}
+
+	if err = fileutils.WriteYAMLWithIndent(values, newPath); err != nil {
+		return fmt.Errorf("failed to write to %s: %w", newPath, err)
+	}
+
+	if oldExists {
+		if err = fileutils.RemovePathIfExists(oldPath); err != nil {
+			return fmt.Errorf("failed to remove legacy %s: %w", oldPath, err)
+		}
+		fmt.Printf("Migrated %s to variants/%s/.\n", variantValuesFileName(variant), variant)
 	}
 
 	return nil
+}
+
+// fileExists reports whether a regular file exists at the given path.
+func fileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, fmt.Errorf("failed to stat %s: %w", path, err)
+}
+
+// VariantFolderFileMissing reports whether the pattern is missing the variants folder
+// structure file for its configured variant. It resolves the variant from
+// 'main.variant' (or the legacy 'main.clusterGroupName', defaulting to "prod") and
+// checks for variants/<variant>/values-<variant>.yaml. It returns missing=false when
+// values-global.yaml does not exist (nothing to warn about).
+func VariantFolderFileMissing(repoRoot string) (variant string, missing bool, err error) {
+	globalValuesPath := filepath.Join(repoRoot, "values-global.yaml")
+
+	yamlFile, err := os.ReadFile(globalValuesPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", false, nil
+		}
+		return "", false, fmt.Errorf("failed to read %s: %w", globalValuesPath, err)
+	}
+
+	var values types.ValuesGlobal
+	if err = yaml.Unmarshal(yamlFile, &values); err != nil {
+		return "", false, fmt.Errorf("failed to unmarshal YAML from %s: %w", globalValuesPath, err)
+	}
+
+	variant = values.Main.Variant
+	if variant == "" {
+		if legacy, ok := values.Main.OtherFields[deprecatedClusterGroupNameField].(string); ok {
+			variant = legacy
+		}
+	}
+	if variant == "" {
+		variant = "prod"
+	}
+
+	exists, err := fileExists(variantFolderValuesPath(repoRoot, variant))
+	if err != nil {
+		return "", false, err
+	}
+
+	return variant, !exists, nil
 }
 
 // mergeClusterGroupValues intelligently merges existing values with new defaults

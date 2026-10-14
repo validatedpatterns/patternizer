@@ -133,7 +133,7 @@ var _ = Describe("patternizer upgrade deprecation warning", func() {
 			out := string(session.Out.Contents())
 			Expect(out).To(ContainSubstring("main.clusterGroupName"))
 			Expect(out).To(ContainSubstring("main.variant"))
-			Expect(out).To(ContainSubstring("0.0.79"))
+			Expect(out).To(ContainSubstring("0.0.78"))
 		})
 
 		It("should leave values-global.yaml unchanged", func() {
@@ -143,7 +143,30 @@ var _ = Describe("patternizer upgrade deprecation warning", func() {
 		})
 	})
 
-	Context("when values-global.yaml already uses main.variant", func() {
+	Context("when values-global.yaml already uses main.variant and the variants folder", func() {
+		var tempDir string
+		var session *gexec.Session
+
+		BeforeEach(func() {
+			tempDir = createTestDir()
+			Expect(os.WriteFile(filepath.Join(tempDir, "values-global.yaml"), []byte(variantGlobal), 0o644)).To(Succeed())
+			variantDir := filepath.Join(tempDir, "variants", "hub")
+			Expect(os.MkdirAll(variantDir, 0o755)).To(Succeed())
+			Expect(os.WriteFile(filepath.Join(variantDir, "values-hub.yaml"), []byte("clusterGroup:\n  name: hub\n"), 0o644)).To(Succeed())
+			session = runCLI(tempDir, "upgrade")
+		})
+
+		It("should not print any deprecation warning", func() {
+			out := string(session.Out.Contents())
+			Expect(out).NotTo(ContainSubstring("Warning:"))
+		})
+	})
+})
+
+var _ = Describe("patternizer upgrade variants folder warning", func() {
+	const variantGlobal = "global:\n  pattern: test-pattern\nmain:\n  variant: hub\n"
+
+	Context("when the variants folder file is missing", func() {
 		var tempDir string
 		var session *gexec.Session
 
@@ -153,9 +176,31 @@ var _ = Describe("patternizer upgrade deprecation warning", func() {
 			session = runCLI(tempDir, "upgrade")
 		})
 
-		It("should not print a deprecation warning", func() {
+		It("should print a variants folder structure warning linking to the blog", func() {
 			out := string(session.Out.Contents())
-			Expect(out).NotTo(ContainSubstring("deprecated"))
+			Expect(out).To(ContainSubstring("variants folder structure"))
+			Expect(out).To(ContainSubstring("variants/hub/values-hub.yaml"))
+			Expect(out).To(ContainSubstring("0.0.78"))
+			Expect(out).To(ContainSubstring("https://validatedpatterns.io/blog/2026-08-04-variants-folder-structure/"))
+		})
+	})
+
+	Context("when the variants folder file exists", func() {
+		var tempDir string
+		var session *gexec.Session
+
+		BeforeEach(func() {
+			tempDir = createTestDir()
+			Expect(os.WriteFile(filepath.Join(tempDir, "values-global.yaml"), []byte(variantGlobal), 0o644)).To(Succeed())
+			variantDir := filepath.Join(tempDir, "variants", "hub")
+			Expect(os.MkdirAll(variantDir, 0o755)).To(Succeed())
+			Expect(os.WriteFile(filepath.Join(variantDir, "values-hub.yaml"), []byte("clusterGroup:\n  name: hub\n"), 0o644)).To(Succeed())
+			session = runCLI(tempDir, "upgrade")
+		})
+
+		It("should not print a variants folder structure warning", func() {
+			out := string(session.Out.Contents())
+			Expect(out).NotTo(ContainSubstring("variants folder structure"))
 		})
 	})
 })

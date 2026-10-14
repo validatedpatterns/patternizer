@@ -173,8 +173,9 @@ var _ = Describe("ProcessGlobalValues", func() {
 var _ = Describe("ProcessClusterGroupValues", func() {
 	Context("with an existing values file containing custom fields", func() {
 		var (
-			tempDir    string
-			valuesPath string
+			tempDir       string
+			valuesPath    string
+			oldValuesPath string
 		)
 
 		BeforeEach(func() {
@@ -210,10 +211,19 @@ var _ = Describe("ProcessClusterGroupValues", func() {
 				},
 			}
 
-			valuesPath = filepath.Join(tempDir, "values-prod.yaml")
+			oldValuesPath = filepath.Join(tempDir, "values-prod.yaml")
+			valuesPath = filepath.Join(tempDir, "variants", "prod", "values-prod.yaml")
 			initialYaml, err := yaml.Marshal(initialValues)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(os.WriteFile(valuesPath, initialYaml, 0o644)).To(Succeed())
+			Expect(os.WriteFile(oldValuesPath, initialYaml, 0o644)).To(Succeed())
+		})
+
+		It("should migrate the legacy root file into the variants folder", func() {
+			chartPaths := []string{"charts/app1", "charts/app2"}
+			Expect(ProcessClusterGroupValues("test-pattern", "prod", tempDir, chartPaths, false)).To(Succeed())
+
+			Expect(valuesPath).To(BeAnExistingFile())
+			Expect(oldValuesPath).NotTo(BeAnExistingFile())
 		})
 
 		It("should preserve custom fields", func() {
@@ -383,5 +393,67 @@ var _ = Describe("UsesDeprecatedClusterGroupName", func() {
 		used, err := UsesDeprecatedClusterGroupName(tempDir)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(used).To(BeFalse())
+	})
+})
+
+var _ = Describe("VariantFolderFileMissing", func() {
+	var tempDir string
+
+	BeforeEach(func() {
+		tempDir = GinkgoT().TempDir()
+	})
+
+	writeGlobal := func(content string) {
+		Expect(os.WriteFile(filepath.Join(tempDir, "values-global.yaml"), []byte(content), 0o644)).To(Succeed())
+	}
+
+	writeVariantFile := func(variant string) {
+		dir := filepath.Join(tempDir, "variants", variant)
+		Expect(os.MkdirAll(dir, 0o755)).To(Succeed())
+		Expect(os.WriteFile(filepath.Join(dir, "values-"+variant+".yaml"), []byte("clusterGroup:\n  name: "+variant+"\n"), 0o644)).To(Succeed())
+	}
+
+	It("returns missing=false when values-global.yaml does not exist", func() {
+		variant, missing, err := VariantFolderFileMissing(tempDir)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(variant).To(Equal(""))
+		Expect(missing).To(BeFalse())
+	})
+
+	It("returns missing=true when the variant folder file is absent", func() {
+		writeGlobal("main:\n  variant: hub\n")
+
+		variant, missing, err := VariantFolderFileMissing(tempDir)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(variant).To(Equal("hub"))
+		Expect(missing).To(BeTrue())
+	})
+
+	It("returns missing=false when the variant folder file exists", func() {
+		writeGlobal("main:\n  variant: hub\n")
+		writeVariantFile("hub")
+
+		variant, missing, err := VariantFolderFileMissing(tempDir)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(variant).To(Equal("hub"))
+		Expect(missing).To(BeFalse())
+	})
+
+	It("resolves the variant from the legacy clusterGroupName field", func() {
+		writeGlobal("main:\n  clusterGroupName: legacy\n")
+
+		variant, missing, err := VariantFolderFileMissing(tempDir)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(variant).To(Equal("legacy"))
+		Expect(missing).To(BeTrue())
+	})
+
+	It("defaults the variant to prod when none is configured", func() {
+		writeGlobal("global:\n  pattern: test\n")
+
+		variant, missing, err := VariantFolderFileMissing(tempDir)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(variant).To(Equal("prod"))
+		Expect(missing).To(BeTrue())
 	})
 })
