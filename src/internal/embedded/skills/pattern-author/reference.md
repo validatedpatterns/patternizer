@@ -117,7 +117,7 @@ With the [variants folder structure](#variants-folder-structure) (the layout pat
 
 Per-cluster (per-variant) values files live under a top-level `variants/` directory, with one subfolder per variant named after the variant:
 
-```
+```console
 .
 ├── values-global.yaml
 ├── charts/
