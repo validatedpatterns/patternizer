@@ -27,7 +27,7 @@ var _ = Describe("ResolveDisconnectedValues", func() {
 	It("prefers explicit catalogSources over ocpVersion", func() {
 		cfg, err := airgap.ResolveDisconnectedValues(&airgap.AirgapSpec{
 			Registry:   "mirror.example.com:8443",
-			OCPVersion: "4.19",
+			OCPVersion: "4.22",
 			CatalogSources: map[string]string{
 				"redhat":    "cs-redhat-operator-index-v4-22",
 				"community": "cs-community-operator-index-v4-22",

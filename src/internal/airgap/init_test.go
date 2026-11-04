@@ -145,7 +145,7 @@ spec:
 
 		vals, err := os.ReadFile(filepath.Join(outDir, "values-disconnected.yaml"))
 		Expect(err).NotTo(HaveOccurred())
-		Expect(string(vals)).To(ContainSubstring("cs-community-operator-index-v4-19"))
+		Expect(string(vals)).To(ContainSubstring("cs-community-operator-index-v4.22"))
 		Expect(string(vals)).NotTo(ContainSubstring("helmRepoUrl"))
 	})
 
@@ -166,7 +166,7 @@ spec:
 		Expect(string(raw)).To(ContainSubstring("stable-4.16"))
 		Expect(string(raw)).To(ContainSubstring("type: ocp"))
 		Expect(string(raw)).To(ContainSubstring("redhat-operator-index:v4.16"))
-		Expect(string(raw)).NotTo(ContainSubstring("redhat-operator-index:v4.19"))
+		Expect(string(raw)).NotTo(ContainSubstring("redhat-operator-index:v4.22"))
 	})
 
 	It("includes helmRepoUrl in values overlay when --registry is set", func() {
@@ -213,7 +213,7 @@ spec:
 		extraPath := filepath.Join(tmpDir, "extra-images.yaml")
 		Expect(os.WriteFile(extraPath, []byte(`
 operators:
-  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
+  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.22
     packages:
       - name: lvms-operator
 additionalImages:
@@ -253,7 +253,7 @@ helm:
 	It("maps catalogs correctly", func() {
 		Expect(airgap.LookupCatalog("patterns-operator")).To(Equal(airgap.CatalogCommunity))
 		Expect(airgap.LookupCatalog("advanced-cluster-management")).To(Equal(airgap.CatalogRedHat))
-		Expect(airgap.CatalogSourceName(airgap.CatalogRedHat, "4.19")).To(Equal("cs-redhat-operator-index-v4-19"))
-		Expect(strings.Contains(airgap.CatalogImage(airgap.CatalogCommunity, "4.19"), "community-operator-index")).To(BeTrue())
+		Expect(airgap.CatalogSourceName(airgap.CatalogRedHat, "4.22")).To(Equal("cs-redhat-operator-index-v4.22"))
+		Expect(strings.Contains(airgap.CatalogImage(airgap.CatalogCommunity, "4.22"), "community-operator-index")).To(BeTrue())
 	})
 })

@@ -77,6 +77,6 @@ var _ = Describe("BuildImageSet operator channels", func() {
 		isc := airgap.BuildImageSet(inv, &airgap.Options{})
 		Expect(isc.Mirror.Platform).To(BeNil())
 		Expect(isc.Mirror.Operators).To(HaveLen(1))
-		Expect(isc.Mirror.Operators[0].Catalog).To(Equal("registry.redhat.io/redhat/redhat-operator-index:v4.19"))
+		Expect(isc.Mirror.Operators[0].Catalog).To(Equal("registry.redhat.io/redhat/redhat-operator-index:v4.22"))
 	})
 })
