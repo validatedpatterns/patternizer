@@ -1,6 +1,6 @@
 # Patternizer
 
-![Version: 2.13.0](https://img.shields.io/badge/Version-2.13.0-informational?style=flat-square)
+![Version: 2.13.1](https://img.shields.io/badge/Version-2.13.1-informational?style=flat-square)
 [![Quay Repository](https://img.shields.io/badge/Quay.io-patternizer-blue?logo=quay)](https://quay.io/repository/validatedpatterns/patternizer)
 [![CI Pipeline](https://github.com/validatedpatterns/patternizer/actions/workflows/build-push.yaml/badge.svg?branch=main)](https://github.com/validatedpatterns/patternizer/actions/workflows/build-push.yaml)
 
@@ -173,7 +173,7 @@ podman run --pull=newer -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/pat
 registry placeholder in `mirror-commands.sh`). `--ocp-version` is optional: when set
 it adds `mirror.platform` with channel `stable-<version>` and tags pattern-discovered
 OLM catalog indexes / CatalogSource names with that version (default catalog tag is
-`4.19` when omitted).
+`4.22` when omitted).
 
 Git clones land under `--output-dir/<repo-name>/`. Run `oc-mirror` yourself using
 `mirror-commands.sh` (patternizer only generates the config and helpers).

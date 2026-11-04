@@ -23,7 +23,7 @@ type Options struct {
 
 // defaultOLMCatalogVersion tags pattern-discovered OLM catalog indexes when
 // --ocp-version is omitted.
-const defaultOLMCatalogVersion = "4.19"
+const defaultOLMCatalogVersion = "4.22"
 
 // DefaultOptions returns default airgap init options.
 func DefaultOptions() Options {
