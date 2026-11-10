@@ -17,6 +17,7 @@
       - [**Initialize with secrets support:**](#initialize-with-secrets-support)
       - [**Upgrade an existing pattern repository:**](#upgrade-an-existing-pattern-repository)
       - [**Shell alias (optional):**](#shell-alias-optional)
+      - [**Airgap / disconnected:**](./airgap.md)
     - [Understanding Secrets Management](#understanding-secrets-management)
     - [Generated Files](#generated-files)
     - [AI Coding Skills](#ai-coding-skills)
@@ -123,6 +124,8 @@ pattern() {
 Then run commands as `pattern init`, `pattern upgrade`, `pattern airgap init`, etc.
 
 #### **Airgap / disconnected init:**
+
+For a workflow summary (init → mirror → bootstrap → `install-airgap`), see [AIRGAP.md](./AIRGAP.md).
 
 Generate an oc-mirror v2 `imagesetconfig.yaml` plus disconnected install helpers from a local absolute path or a Git URL.
 
@@ -338,7 +341,7 @@ Overrides: `AIRGAP_BOOTSTRAP_DIR`, `AIRGAP_SECRETS_FILE`, `AIRGAP_PATTERNIZER_BI
 Lower-level commands `airgap trust-ca` and `airgap repo-creds` remain available
 for one-off use without a values-secret file.
 
-See the [disconnected installation guide](https://validatedpatterns.io/learn/disconnected-installation/).
+See [airgap.md](./airgap.md) for a workflow summary, and the [disconnected installation guide](https://validatedpatterns.io/learn/disconnected-installation/).
 
 What upgrade does:
 
