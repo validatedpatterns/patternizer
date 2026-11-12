@@ -12,3 +12,15 @@ updates:
           - "*"
     cooldown:
       default-days: 7
+
+  # Check for Go module updates every week
+  - package-ecosystem: "gomod"
+    directory: "/src"
+    schedule:
+      interval: "weekly"
+    groups:
+      golang-dependencies:
+        patterns:
+          - "*"
+    cooldown:
+      default-days: 7
