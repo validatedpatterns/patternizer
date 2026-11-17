@@ -60,8 +60,8 @@ jobs:
         include:
           - upload_registry: quay.io/validatedpatterns
             legacy: false
-          - upload_registry: quay.io/hybridcloudpatterns
-            legacy: true
+          # - upload_registry: quay.io/hybridcloudpatterns
+          #   legacy: true
 
     runs-on: ubuntu-latest
     permissions:
